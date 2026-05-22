@@ -397,7 +397,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _osVersion = dynamic([{OSVersionFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated > ago(30d)\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| project\n    DeviceName,\n    OSVersion,\n    OSBuild,\n    OSEdition,\n    WUQualityDeferralDays,\n    WUFeatureDeferralDays,\n    WUQualityPauseState,\n    WUFeaturePauseState,\n    WUDeadlineForQuality = column_ifexists('WUDeadlineForQualityUpdatesInDays', ''),\n    WUDeadlineForFeature = column_ifexists('WUDeadlineForFeatureUpdatesInDays', ''),\n    WURestartGracePeriod = column_ifexists('WURestartGracePeriodInDays', ''),\n    LastWUScanTime,\n    TimeGenerated\n| order by DeviceName asc",
+        "query": "let _osVersion = dynamic([{OSVersionFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated > ago(30d)\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| project\n    DeviceName,\n    OSVersion,\n    OSBuild,\n    OSEdition,\n    WUQualityDeferralDays,\n    WUFeatureDeferralDays,\n    WUQualityPauseState,\n    WUFeaturePauseState,\n    WUQualityDeadlineDays,\n    WUFeatureDeadlineDays,\n    WUQualityGracePeriodDays,\n    WUFeatureGracePeriodDays,\n    WUDeadlineNoAutoRestart,\n    LastWUScanTime,\n    TimeGenerated\n| order by DeviceName asc",
         "size": 0,
         "title": "Riepilogo Configurazione Update Ring",
         "timeContext": { "durationMs": 0 },
