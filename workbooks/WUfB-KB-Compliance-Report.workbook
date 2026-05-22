@@ -227,7 +227,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| project\n    CUMonth,\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    ClientSubstateTime,\n    TargetBuild,\n    UpdateReleaseTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    TimeGenerated\n| order by CUMonth desc, DeviceName asc, TargetKBNumber asc",
+        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nlet clientInfo = UCClient\n| where TimeGenerated > ago(30d)\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, OSVersion, OSBuild, OSEdition, OSSecurityUpdateStatus, WUQualityDeferralDays, WUQualityPauseState, LastWUScanTime;\nlet serviceInfo = UCServiceUpdateStatus\n| where TimeGenerated > ago(30d)\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild\n| project AzureADDeviceId, TargetBuild, ServiceState, ServiceSubstate;\nlet alertInfo = UCUpdateAlert\n| where TimeGenerated > ago(30d)\n| where AlertStatus == \"Active\"\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild\n| project AzureADDeviceId, TargetBuild, AlertSubtype, AlertClassification, ErrorCode;\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| join kind=leftouter serviceInfo on AzureADDeviceId, TargetBuild\n| join kind=leftouter alertInfo on AzureADDeviceId, TargetBuild\n| project\n    CUMonth,\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    ServiceState,\n    ServiceSubstate,\n    AlertSubtype,\n    AlertClassification,\n    ErrorCode,\n    OSVersion,\n    OSBuild,\n    OSSecurityUpdateStatus,\n    WUQualityDeferralDays,\n    WUQualityPauseState,\n    LastWUScanTime,\n    ClientSubstateTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    TimeGenerated\n| order by CUMonth desc, DeviceName asc, TargetKBNumber asc",
         "size": 0,
         "title": "Stato Installazione per Device e KB",
         "timeContext": { "durationMs": 0 },
@@ -261,6 +261,57 @@
                 "thresholdsGrid": [
                   { "operator": "==", "thresholdValue": "Security", "representation": "3", "text": "{0}{1}" },
                   { "operator": "==", "thresholdValue": "NonSecurity", "representation": "1", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            },
+            {
+              "columnMatch": "ServiceState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Offering", "representation": "success", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Pending", "representation": "pending", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "OnHold", "representation": "4", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Canceled", "representation": "cancelled", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            },
+            {
+              "columnMatch": "AlertClassification",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Error", "representation": "3", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Warning", "representation": "warning", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            },
+            {
+              "columnMatch": "OSSecurityUpdateStatus",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Latest", "representation": "success", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "NotLatest", "representation": "warning", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "MultipleSecurityUpdatesMissing", "representation": "3", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            },
+            {
+              "columnMatch": "WUQualityPauseState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "NotConfigured", "representation": "success", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Paused", "representation": "3", "text": "{0}{1}" },
                   { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
                 ]
               }
