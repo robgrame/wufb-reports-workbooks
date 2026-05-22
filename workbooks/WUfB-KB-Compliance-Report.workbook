@@ -1,0 +1,300 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# 📈 WUfB Reports - Riepilogo Compliance per KB\n\nReport focalizzato sulla compliance di installazione per ciascuna KB, con indicazione del mese di riferimento della Cumulative Update.\n\n---"
+      },
+      "name": "text-header"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "c1a1e001-1111-4a1a-b1c1-111111111111",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 604800000 },
+                { "durationMs": 1209600000 },
+                { "durationMs": 2592000000 },
+                { "durationMs": 7776000000 }
+              ],
+              "allowCustom": true
+            },
+            "value": { "durationMs": 2592000000 },
+            "label": "Intervallo Temporale"
+          },
+          {
+            "id": "c1a1e001-2222-4a1a-b1c1-222222222222",
+            "version": "KqlParameterItem/1.0",
+            "name": "KBFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated > ago(90d)\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct TargetKBNumber\n| where isnotempty(TargetKBNumber)\n| order by TargetKBNumber desc",
+            "typeSettings": {
+              "additionalResourceOptions": [ "value::all" ],
+              "selectAllValue": "*"
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "label": "KB Number"
+          },
+          {
+            "id": "c1a1e001-3333-4a1a-b1c1-333333333333",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClientStateFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated > ago(90d)\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct ClientState\n| order by ClientState asc",
+            "typeSettings": {
+              "additionalResourceOptions": [ "value::all" ],
+              "selectAllValue": "*"
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "label": "Client State"
+          },
+          {
+            "id": "c1a1e001-4444-4a1a-b1c1-444444444444",
+            "version": "KqlParameterItem/1.0",
+            "name": "UpdateClassificationFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated > ago(90d)\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct UpdateClassification\n| order by UpdateClassification asc",
+            "typeSettings": {
+              "additionalResourceOptions": [ "value::all" ],
+              "selectAllValue": "*"
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "label": "Classification (Security/NonSecurity)"
+          },
+          {
+            "id": "c1a1e001-5555-4a1a-b1c1-555555555555",
+            "version": "KqlParameterItem/1.0",
+            "name": "DeviceNameFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Filtro Device Name (contiene)"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📊 Compliance per KB - Riepilogo"
+      },
+      "name": "text-section-summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| summarize\n    TotalDevices = dcount(DeviceName),\n    Installed = dcountif(DeviceName, ClientState == \"Installed\"),\n    Installing = dcountif(DeviceName, ClientState == \"Installing\"),\n    Offering = dcountif(DeviceName, ClientState == \"Offering\"),\n    OnHold = dcountif(DeviceName, ClientState == \"OnHold\"),\n    Canceled = dcountif(DeviceName, ClientState == \"Canceled\"),\n    Unknown = dcountif(DeviceName, ClientState == \"Unknown\")\n    by TargetKBNumber, UpdateDisplayName, UpdateClassification, CUMonth\n| extend PercentInstalled = round(todouble(Installed) / todouble(TotalDevices) * 100, 1)\n| project\n    CUMonth,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    TotalDevices,\n    Installed,\n    Installing,\n    Offering,\n    OnHold,\n    Canceled,\n    Unknown,\n    PercentInstalled\n| order by CUMonth desc, TargetKBNumber desc",
+        "size": 0,
+        "title": "Compliance per KB con mese CU di riferimento",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "PercentInstalled",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "max": 100,
+                "palette": "redGreen"
+              }
+            },
+            {
+              "columnMatch": "Installed",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "green"
+              }
+            },
+            {
+              "columnMatch": "Unknown",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "gray"
+              }
+            },
+            {
+              "columnMatch": "UpdateClassification",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Security", "representation": "3", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "NonSecurity", "representation": "1", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            { "itemKey": "CUMonth", "sortOrder": 2 }
+          ]
+        }
+      },
+      "name": "grid-kb-compliance-summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _kb = dynamic([{KBFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| summarize Devices = dcount(DeviceName) by CUMonth, ClientState\n| order by CUMonth desc",
+        "size": 0,
+        "title": "Distribuzione ClientState per Mese CU",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "barchart",
+        "chartSettings": {
+          "xAxis": "CUMonth",
+          "yAxis": [ "Devices" ],
+          "group": "ClientState",
+          "seriesLabelSettings": [
+            { "seriesName": "Installed", "color": "green" },
+            { "seriesName": "Installing", "color": "blue" },
+            { "seriesName": "Offering", "color": "orange" },
+            { "seriesName": "OnHold", "color": "yellow" },
+            { "seriesName": "Canceled", "color": "gray" },
+            { "seriesName": "Unknown", "color": "redBright" }
+          ]
+        }
+      },
+      "name": "chart-state-by-month"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📋 Dettaglio per Device - Stato Installazione"
+      },
+      "name": "text-section-detail"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| project\n    CUMonth,\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    ClientSubstateTime,\n    TargetBuild,\n    UpdateReleaseTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    TimeGenerated\n| order by CUMonth desc, DeviceName asc, TargetKBNumber asc",
+        "size": 0,
+        "title": "Stato Installazione per Device e KB",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "ClientState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Installed", "representation": "success", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Installing", "representation": "2", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Offering", "representation": "warning", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "OnHold", "representation": "4", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Canceled", "representation": "cancelled", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Unknown", "representation": "unknown", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            },
+            {
+              "columnMatch": "UpdateClassification",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Security", "representation": "3", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "NonSecurity", "representation": "1", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            { "itemKey": "CUMonth", "sortOrder": 2 }
+          ]
+        }
+      },
+      "name": "grid-device-detail"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📉 Trend Compliance nel tempo"
+      },
+      "name": "text-section-trend"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _kb = dynamic([{KBFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber, bin(TimeGenerated, 1d)\n| summarize\n    Installed = dcountif(DeviceName, ClientState == \"Installed\"),\n    NotInstalled = dcountif(DeviceName, ClientState != \"Installed\")\n    by Day = bin(TimeGenerated, 1d)\n| extend PercentInstalled = round(todouble(Installed) / todouble(Installed + NotInstalled) * 100, 1)\n| order by Day asc",
+        "size": 0,
+        "title": "Trend % Installed nel tempo",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "linechart",
+        "chartSettings": {
+          "xAxis": "Day",
+          "yAxis": [ "PercentInstalled" ],
+          "ySettings": {
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      "name": "chart-compliance-trend"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n### Note\n- La colonna **CUMonth** è derivata da `UpdateReleaseTime` formattata come `yyyy-MM` per indicare il mese della Cumulative Update\n- I dati mostrano l'ultimo stato noto per ciascuna combinazione Device + KB\n- Usa i filtri in alto per selezionare KB specifiche, stati o classificazioni"
+      },
+      "name": "text-footer"
+    }
+  ],
+  "fallbackResourceIds": [],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
+  "styleSettings": {},
+  "fromTemplateId": "custom-wufb-kb-compliance"
+}
