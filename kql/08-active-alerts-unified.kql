@@ -1,0 +1,36 @@
+// Alert attivi per device e per update
+// Unisce UCDeviceAlert e UCUpdateAlert per una vista completa
+let deviceAlerts = UCDeviceAlert
+| where TimeGenerated > ago(30d)
+| where AlertStatus == "Active"
+| summarize arg_max(TimeGenerated, *) by AlertId
+| project
+    DeviceName,
+    AlertSource = "DeviceAlert",
+    AlertType,
+    AlertSubtype,
+    AlertClassification,
+    AlertStatus,
+    Description,
+    Recommendation,
+    ErrorCode,
+    StartTime,
+    TimeGenerated;
+let updateAlerts = UCUpdateAlert
+| where TimeGenerated > ago(30d)
+| where AlertStatus == "Active"
+| summarize arg_max(TimeGenerated, *) by AlertId
+| project
+    DeviceName,
+    AlertSource = "UpdateAlert",
+    AlertType,
+    AlertSubtype,
+    AlertClassification,
+    AlertStatus,
+    Description,
+    Recommendation,
+    ErrorCode,
+    StartTime,
+    TimeGenerated;
+union deviceAlerts, updateAlerts
+| sort by AlertClassification desc, AlertSubtype asc, DeviceName asc

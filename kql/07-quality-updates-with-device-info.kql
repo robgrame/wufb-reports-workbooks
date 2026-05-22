@@ -1,0 +1,35 @@
+// Quality Update compliance con info device (join UCClient + UCClientUpdateStatus)
+// Mostra lo stato di installazione dei quality update con contesto device
+UCClientUpdateStatus
+| where TimeGenerated > ago(7d)
+| where UpdateCategory == "WindowsQualityUpdate"
+| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| join kind=leftouter (
+    UCClient
+    | where TimeGenerated > ago(30d)
+    | summarize arg_max(TimeGenerated, *) by DeviceName
+    | project DeviceName, OSVersion, OSBuild, OSEdition,
+             OSSecurityUpdateStatus, OSQualityUpdateStatus,
+             WUQualityDeferralDays, WUQualityPauseState,
+             WUQualityDeadlineDays, LastWUScanTime
+) on DeviceName
+| project
+    DeviceName,
+    TargetKBNumber,
+    UpdateDisplayName,
+    UpdateClassification,
+    ClientState,
+    ClientSubstate,
+    ClientSubstateTime,
+    TargetBuild,
+    UpdateReleaseTime,
+    OfferReceivedTime,
+    UpdateInstalledTime,
+    OSVersion,
+    OSBuild,
+    OSEdition,
+    OSSecurityUpdateStatus,
+    WUQualityDeferralDays,
+    WUQualityPauseState,
+    LastWUScanTime
+| sort by DeviceName asc, TargetKBNumber asc

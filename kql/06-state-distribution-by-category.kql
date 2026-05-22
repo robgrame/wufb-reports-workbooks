@@ -1,0 +1,7 @@
+// Distribuzione stati per categoria update
+// Mostra quanti device sono in ciascuno stato per ogni UpdateCategory
+UCClientUpdateStatus
+| where TimeGenerated > ago(7d)
+| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| summarize DeviceCount = dcount(DeviceName) by UpdateCategory, ClientState
+| sort by UpdateCategory asc, DeviceCount desc

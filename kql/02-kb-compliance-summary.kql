@@ -1,0 +1,16 @@
+// Riepilogo Compliance per KB
+// Quanti device hanno installato / stanno installando ogni KB
+UCClientUpdateStatus
+| where TimeGenerated > ago(7d)
+| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| summarize
+    TotalDevices = dcount(DeviceName),
+    Installed = dcountif(DeviceName, ClientState == "Installed"),
+    Installing = dcountif(DeviceName, ClientState == "Installing"),
+    Offering = dcountif(DeviceName, ClientState == "Offering"),
+    OnHold = dcountif(DeviceName, ClientState == "OnHold"),
+    Canceled = dcountif(DeviceName, ClientState == "Canceled"),
+    Unknown = dcountif(DeviceName, ClientState == "Unknown")
+    by TargetKBNumber, UpdateDisplayName, UpdateCategory, UpdateClassification
+| extend PercentInstalled = round(todouble(Installed) / todouble(TotalDevices) * 100, 1)
+| sort by TargetKBNumber desc

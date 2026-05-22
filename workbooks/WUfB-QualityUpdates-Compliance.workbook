@@ -1,0 +1,438 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# 🔒 WUfB Reports - Quality Updates Compliance\n\nReport sullo stato di installazione dei **Quality Update (Security e Non-Security)** per ciascun device.\nDati integrati da: `UCClientUpdateStatus`, `UCClient`, `UCServiceUpdateStatus`, `UCUpdateAlert`, `UCDeviceAlert`.\n\n---"
+      },
+      "name": "text-header"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "b1a1e001-1111-4a1a-b1c1-111111111111",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 86400000 },
+                { "durationMs": 259200000 },
+                { "durationMs": 604800000 },
+                { "durationMs": 1209600000 },
+                { "durationMs": 2592000000 }
+              ],
+              "allowCustom": true
+            },
+            "value": { "durationMs": 604800000 },
+            "label": "Intervallo Temporale"
+          },
+          {
+            "id": "b1a1e001-2222-4a1a-b1c1-222222222222",
+            "version": "KqlParameterItem/1.0",
+            "name": "UpdateClassificationFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated > ago(30d)\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct UpdateClassification\n| order by UpdateClassification asc",
+            "typeSettings": {
+              "additionalResourceOptions": [ "value::all" ],
+              "selectAllValue": "*"
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "label": "Classificazione (Security/NonSecurity)"
+          },
+          {
+            "id": "b1a1e001-3333-4a1a-b1c1-333333333333",
+            "version": "KqlParameterItem/1.0",
+            "name": "DeviceNameFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Filtro Device Name (contiene)"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📊 Panoramica Compliance Quality Update (da UCClient)"
+      },
+      "name": "text-section-overview"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName\n| summarize\n    TotalDevices = count(),\n    QualityLatest = countif(OSQualityUpdateStatus == \"Latest\"),\n    QualityNotLatest = countif(OSQualityUpdateStatus == \"NotLatest\"),\n    SecurityLatest = countif(OSSecurityUpdateStatus == \"Latest\"),\n    SecurityNotLatest = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    SecurityMultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")",
+        "size": 4,
+        "title": "Stato Compliance Globale",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": { "columnMatch": "Column1", "formatter": 1 },
+          "leftContent": { "columnMatch": "TotalDevices", "formatter": 12, "formatOptions": { "palette": "auto" } },
+          "showBorder": true
+        }
+      },
+      "name": "tiles-compliance-overview"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName\n| summarize Devices = count() by OSSecurityUpdateStatus\n| order by Devices desc",
+        "size": 3,
+        "title": "Security Update Status",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "seriesLabelSettings": [
+            { "seriesName": "Latest", "color": "green" },
+            { "seriesName": "NotLatest", "color": "orange" },
+            { "seriesName": "MultipleSecurityUpdatesMissing", "color": "redBright" }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "chart-security-status"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName\n| summarize Devices = count() by OSQualityUpdateStatus\n| order by Devices desc",
+        "size": 3,
+        "title": "Quality Update Status",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "seriesLabelSettings": [
+            { "seriesName": "Latest", "color": "green" },
+            { "seriesName": "NotLatest", "color": "orange" }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "chart-quality-status"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📋 Stato Installazione Quality Update per Device e KB (UCClientUpdateStatus)"
+      },
+      "name": "text-section-detail"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _classification = dynamic([{UpdateClassificationFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| join kind=leftouter (\n    UCClient\n    | where TimeGenerated > ago(30d)\n    | summarize arg_max(TimeGenerated, *) by DeviceName\n    | project DeviceName, OSVersion, OSBuild, OSEdition, WUQualityDeferralDays, WUQualityPauseState, LastWUScanTime\n) on DeviceName\n| project\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    ClientSubstateTime,\n    TargetBuild,\n    UpdateReleaseTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    OSVersion,\n    OSBuild,\n    OSEdition,\n    WUQualityDeferralDays,\n    WUQualityPauseState,\n    LastWUScanTime,\n    TimeGenerated\n| order by DeviceName asc, TargetKBNumber asc",
+        "size": 0,
+        "title": "Dettaglio Quality Update per Device (con info device da UCClient)",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "ClientState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Installed", "representation": "success", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Installing", "representation": "2", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Offering", "representation": "warning", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "OnHold", "representation": "4", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Canceled", "representation": "cancelled", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Unknown", "representation": "unknown", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            },
+            {
+              "columnMatch": "UpdateClassification",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Security", "representation": "3", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "NonSecurity", "representation": "1", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            { "itemKey": "DeviceName", "sortOrder": 1 }
+          ]
+        }
+      },
+      "name": "grid-quality-update-detail"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📈 Riepilogo Compliance per KB"
+      },
+      "name": "text-section-kb-summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _classification = dynamic([{UpdateClassificationFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| summarize\n    TotalDevices = dcount(DeviceName),\n    Installed = dcountif(DeviceName, ClientState == \"Installed\"),\n    Installing = dcountif(DeviceName, ClientState == \"Installing\"),\n    Offering = dcountif(DeviceName, ClientState == \"Offering\"),\n    OnHold = dcountif(DeviceName, ClientState == \"OnHold\"),\n    Unknown = dcountif(DeviceName, ClientState == \"Unknown\")\n    by TargetKBNumber, UpdateDisplayName, UpdateClassification, UpdateReleaseTime\n| extend PercentInstalled = round(todouble(Installed) / todouble(TotalDevices) * 100, 1)\n| order by UpdateReleaseTime desc",
+        "size": 0,
+        "title": "Compliance per KB (% installazione)",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "PercentInstalled",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "max": 100,
+                "palette": "redGreen"
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "grid-kb-compliance"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 🚦 Service-Side Status (UCServiceUpdateStatus)\nStato lato servizio: come Windows Autopatch/WUfB sta offrendo gli update ai device.\n> **Nota**: questa tabella potrebbe contenere solo dati relativi a Feature Update se i Quality Update non sono gestiti tramite deployment service."
+      },
+      "name": "text-section-service"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "UCServiceUpdateStatus\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild\n| summarize DeviceCount = count() by ServiceState, ServiceSubstate, UpdateCategory, UpdateDisplayName, TargetBuild\n| order by UpdateCategory asc, ServiceState asc, DeviceCount desc",
+        "size": 0,
+        "title": "Service Update Status - Stato dell'offerta lato servizio",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "ServiceState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Offering", "representation": "success", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Pending", "representation": "pending", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "OnHold", "representation": "4", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Canceled", "representation": "cancelled", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "grid-service-status"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## ⚠️ Alert (UCUpdateAlert + UCDeviceAlert)\nMostra tutti gli alert (Active e Resolved). Usa il filtro nella tabella per filtrare per stato."
+      },
+      "name": "text-section-alerts"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AlertId\n| project\n    DeviceName,\n    UpdateCategory,\n    AlertType,\n    AlertSubtype,\n    AlertClassification,\n    AlertStatus,\n    Description,\n    Recommendation,\n    ErrorCode,\n    TargetBuild,\n    ClientSubstate,\n    StartTime,\n    ResolvedTime,\n    TimeGenerated\n| order by AlertStatus asc, AlertClassification desc, DeviceName asc",
+        "size": 0,
+        "title": "Update Alert - Problemi su Update (tutti i tipi)",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "AlertClassification",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Error", "representation": "3", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Warning", "representation": "warning", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Informational", "representation": "1", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "grid-update-alerts"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCDeviceAlert\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AlertId\n| project\n    DeviceName,\n    AlertType,\n    AlertSubtype,\n    AlertClassification,\n    AlertStatus,\n    Description,\n    Recommendation,\n    ErrorCode,\n    StartTime,\n    ResolvedTime,\n    TimeGenerated\n| order by AlertStatus asc, AlertClassification desc, DeviceName asc",
+        "size": 0,
+        "title": "Device Alert - Problemi generali dei device (Active + Resolved)",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "AlertClassification",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Error", "representation": "3", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Warning", "representation": "warning", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Informational", "representation": "1", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            },
+            {
+              "columnMatch": "AlertSubtype",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "MultipleSecurityUpdatesMissing", "representation": "3", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "EndOfService", "representation": "critical", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "warning", "text": "{0}{1}" }
+                ]
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "grid-device-alerts"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 🖥️ Dettaglio Device - Configurazione WU e stato OS (UCClient)"
+      },
+      "name": "text-section-device-detail"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName\n| project\n    DeviceName,\n    OSVersion,\n    OSBuild,\n    OSEdition,\n    OSQualityUpdateStatus,\n    OSSecurityUpdateStatus,\n    WUQualityDeferralDays,\n    WUQualityPauseState,\n    WUQualityDeadlineDays,\n    WUQualityGracePeriodDays,\n    LastWUScanTime,\n    UpdateConnectivityLevel,\n    DeviceManufacturer,\n    DeviceModel\n| order by DeviceName asc",
+        "size": 0,
+        "title": "Configurazione Windows Update e Stato OS per Device",
+        "timeContext": { "durationMs": 0 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "OSQualityUpdateStatus",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Latest", "representation": "success", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "NotLatest", "representation": "warning", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            },
+            {
+              "columnMatch": "OSSecurityUpdateStatus",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "Latest", "representation": "success", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "NotLatest", "representation": "warning", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "MultipleSecurityUpdatesMissing", "representation": "3", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            },
+            {
+              "columnMatch": "WUQualityPauseState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  { "operator": "==", "thresholdValue": "NotConfigured", "representation": "success", "text": "{0}{1}" },
+                  { "operator": "==", "thresholdValue": "Paused", "representation": "3", "text": "{0}{1}" },
+                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                ]
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "grid-device-config"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n### Tabelle utilizzate\n| Tabella | Contenuto |\n|---|---|\n| **UCClientUpdateStatus** | Stato installazione update lato client per device/KB |\n| **UCClient** | Info device: OS, configurazione WU, compliance status |\n| **UCServiceUpdateStatus** | Stato offerta update lato servizio (Autopatch/WUfB) |\n| **UCUpdateAlert** | Alert relativi a problemi su specifici update |\n| **UCDeviceAlert** | Alert relativi a problemi generali del device |"
+      },
+      "name": "text-footer"
+    }
+  ],
+  "fallbackResourceIds": [],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
+  "styleSettings": {},
+  "fromTemplateId": "custom-wufb-quality-updates"
+}

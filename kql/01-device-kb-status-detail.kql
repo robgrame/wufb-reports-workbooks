@@ -1,0 +1,22 @@
+// Stato aggiornamento per Device e KB (dettaglio completo)
+// Mostra l'ultimo stato di ciascun device per ogni KB target
+UCClientUpdateStatus
+| where TimeGenerated > ago(7d)
+| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| project
+    DeviceName,
+    TargetKBNumber,
+    UpdateDisplayName,
+    UpdateCategory,
+    UpdateClassification,
+    ClientState,
+    ClientSubstate,
+    ClientSubstateTime,
+    TargetBuild,
+    TargetVersion,
+    UpdateReleaseTime,
+    OfferReceivedTime,
+    RestartRequiredTime,
+    UpdateInstalledTime,
+    TimeGenerated
+| sort by DeviceName asc, TargetKBNumber asc

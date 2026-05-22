@@ -1,0 +1,16 @@
+// Device bloccati o in stato problematico
+// OnHold, Canceled, Unknown, SafeguardHold, Validation
+UCClientUpdateStatus
+| where TimeGenerated > ago(7d)
+| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| where ClientState in ("OnHold", "Canceled", "Unknown")
+    or ClientSubstate in ("Validation", "SafeguardHold")
+| project
+    DeviceName,
+    TargetKBNumber,
+    UpdateDisplayName,
+    ClientState,
+    ClientSubstate,
+    ClientSubstateTime,
+    TimeGenerated
+| sort by ClientState asc, DeviceName asc

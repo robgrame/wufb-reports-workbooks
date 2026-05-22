@@ -1,0 +1,15 @@
+// Timeline installazione - Tempo medio per completare l'update
+// Calcola il tempo tra OfferReceived e UpdateInstalled per ogni KB
+UCClientUpdateStatus
+| where TimeGenerated > ago(30d)
+| where ClientState == "Installed"
+| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| where isnotempty(OfferReceivedTime) and isnotempty(UpdateInstalledTime)
+| extend InstallDurationHours = datetime_diff('hour', UpdateInstalledTime, OfferReceivedTime)
+| summarize
+    AvgInstallHours = round(avg(InstallDurationHours), 1),
+    MaxInstallHours = max(InstallDurationHours),
+    MinInstallHours = min(InstallDurationHours),
+    DeviceCount = dcount(DeviceName)
+    by TargetKBNumber, UpdateDisplayName
+| sort by AvgInstallHours desc

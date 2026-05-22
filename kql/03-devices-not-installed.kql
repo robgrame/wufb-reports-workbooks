@@ -1,0 +1,16 @@
+// Device con update NON ancora installati
+// Filtra per stato diverso da "Installed"
+UCClientUpdateStatus
+| where TimeGenerated > ago(7d)
+| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| where ClientState != "Installed"
+| project
+    DeviceName,
+    TargetKBNumber,
+    UpdateDisplayName,
+    UpdateCategory,
+    ClientState,
+    ClientSubstate,
+    ClientSubstateTime,
+    TimeGenerated
+| sort by ClientState asc, DeviceName asc
