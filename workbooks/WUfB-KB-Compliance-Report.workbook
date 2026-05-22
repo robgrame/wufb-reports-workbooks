@@ -318,6 +318,14 @@
             }
           ],
           "filter": true,
+          "filterBy": [
+            { "fieldName": "CUMonth", "comparison": "isEqualTo" },
+            { "fieldName": "DeviceName", "comparison": "contains" },
+            { "fieldName": "TargetKBNumber", "comparison": "isEqualTo" },
+            { "fieldName": "ClientState", "comparison": "isEqualTo" },
+            { "fieldName": "OSVersion", "comparison": "isEqualTo" },
+            { "fieldName": "OSSecurityUpdateStatus", "comparison": "isEqualTo" }
+          ],
           "sortBy": [
             { "itemKey": "CUMonth", "sortOrder": 2 }
           ]
