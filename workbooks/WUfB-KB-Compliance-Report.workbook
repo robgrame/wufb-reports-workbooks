@@ -501,7 +501,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## 🚦 Service-Side Status e Alert per Device\n\n**ClientState vs ServiceState** — due viste *complementari*:\n\n| Sorgente | Cosa rappresenta |\n|---|---|\n| **ClientState** (`UCClientUpdateStatus`) | Stato *lato device*: cosa sta facendo Windows Update sul PC (download, installazione, restart pendente, installato). |\n| **ServiceState** (`UCServiceUpdateStatus`) | Stato *lato servizio* (Windows Update / Autopatch / Deployment Service): se e come la KB è stata *offerta* al device. Valori tipici: `Offering` (servizio sta offrendo l'update), `Pending` (non ancora offerto), `OnHold` (offerta sospesa lato cloud), `Canceled`. |\n\nÈ normale vedere `ServiceState = Offering` (il servizio sta offrendo) mentre `ClientState = Installing` (il device sta già installando) o `Installed`: indicano momenti diversi dello stesso flusso.\n\n**Note di lettura:**\n- La join con Service-Side e Alert avviene su `AzureADDeviceId` + `TargetBuild` in *leftouter*: vengono mostrate **tutte le cumulative** selezionate (anche con filtro *CU Month = All*); lo stato service/alert compare solo per le righe con un record corrispondente.\n- Quando il device è in attesa di riavvio per completare l'installazione viene mostrato `AwaitingRestart` nella colonna *Note*.\n- `AlertStatus = Resolved` indica un problema *passato già rientrato* (es. errore transitorio di connettività); non richiede azione."
+        "json": "## 🚦 Stato e Alert per Device\n\nLa tabella mostra lo stato *lato device* (`ClientState` da `UCClientUpdateStatus`) e gli eventuali **alert** correlati alla stessa KB.\n\n**Note di lettura:**\n- La join con gli Alert avviene su `AzureADDeviceId` + `TargetBuild` in *leftouter*: vengono mostrate **tutte le cumulative** selezionate (anche con filtro *CU Month = All*); l'alert compare solo per le righe con un record corrispondente.\n- Quando il device è in attesa di riavvio per completare l'installazione viene mostrato `AwaitingRestart` nella colonna *Note*.\n- `AlertStatus = Resolved` indica un problema *passato già rientrato* (es. errore transitorio di connettività); non richiede azione."
       },
       "name": "text-section-service-alerts"
     },
@@ -509,7 +509,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _osVersion = dynamic([{OSVersionFilter}]);\nlet _modernOnly = \"{ModernOnly}\";\nlet _deviceFilter = \"{DeviceNameFilter}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, OSVersion;\nlet updates = UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or not(OSVersion startswith \"Windows 10\")\n| project DeviceName, AzureADDeviceId, TargetKBNumber, TargetBuild, CUMonth, ClientState, ClientSubstate;\nlet serviceInfo = UCServiceUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild\n| project AzureADDeviceId, TargetBuild, ServiceState, ServiceSubstate;\nlet alertInfo = UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where isnotempty(TargetBuild)\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild, AlertSubtype\n| project AzureADDeviceId, TargetBuild, AlertSubtype, AlertClassification, AlertStatus, ErrorCode;\nupdates\n| join kind=leftouter serviceInfo on AzureADDeviceId, TargetBuild\n| join kind=leftouter alertInfo on AzureADDeviceId, TargetBuild\n| extend Note = case(\n    ClientSubstate in (\"PendingRestart\", \"RestartRequired\", \"PendingReboot\"), \"AwaitingRestart\",\n    ClientState == \"Installed\" and isempty(AlertSubtype), \"OK - Installed\",\n    ClientState == \"Installing\" and isempty(AlertSubtype), strcat(\"In progress: \", ClientSubstate),\n    ClientState == \"Offering\" and isempty(AlertSubtype), \"Offered, not yet started\",\n    ClientState == \"OnHold\", \"On hold (safeguard/policy)\",\n    \"\"\n)\n| project\n    CUMonth,\n    DeviceName,\n    TargetKBNumber,\n    TargetBuild,\n    ClientState,\n    ClientSubstate,\n    ServiceState,\n    ServiceSubstate,\n    AlertSubtype,\n    AlertClassification,\n    AlertStatus,\n    ErrorCode,\n    Note\n| order by CUMonth desc, DeviceName asc",
+        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _osVersion = dynamic([{OSVersionFilter}]);\nlet _modernOnly = \"{ModernOnly}\";\nlet _deviceFilter = \"{DeviceNameFilter}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, OSVersion;\nlet updates = UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or not(OSVersion startswith \"Windows 10\")\n| project DeviceName, AzureADDeviceId, TargetKBNumber, TargetBuild, CUMonth, ClientState, ClientSubstate;\nlet alertInfo = UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where isnotempty(TargetBuild)\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild, AlertSubtype\n| project AzureADDeviceId, TargetBuild, AlertSubtype, AlertClassification, AlertStatus, ErrorCode;\nupdates\n| join kind=leftouter alertInfo on AzureADDeviceId, TargetBuild\n| extend Note = case(\n    ClientSubstate in (\"PendingRestart\", \"RestartRequired\", \"PendingReboot\"), \"AwaitingRestart\",\n    ClientState == \"Installed\" and isempty(AlertSubtype), \"OK - Installed\",\n    ClientState == \"Installing\" and isempty(AlertSubtype), strcat(\"In progress: \", ClientSubstate),\n    ClientState == \"Offering\" and isempty(AlertSubtype), \"Offered, not yet started\",\n    ClientState == \"OnHold\", \"On hold (safeguard/policy)\",\n    \"\"\n)\n| project\n    CUMonth,\n    DeviceName,\n    TargetKBNumber,\n    TargetBuild,\n    ClientState,\n    ClientSubstate,\n    AlertSubtype,\n    AlertClassification,\n    AlertStatus,\n    ErrorCode,\n    Note\n| order by CUMonth desc, DeviceName asc",
         "size": 0,
         "title": "Stato Service-Side e Alert attivi per Device/KB",
         "timeContext": {
@@ -521,44 +521,6 @@
         "visualization": "table",
         "gridSettings": {
           "formatters": [
-            {
-              "columnMatch": "ServiceState",
-              "formatter": 18,
-              "formatOptions": {
-                "thresholdsOptions": "icons",
-                "thresholdsGrid": [
-                  {
-                    "operator": "==",
-                    "thresholdValue": "Offering",
-                    "representation": "success",
-                    "text": "{0}{1}"
-                  },
-                  {
-                    "operator": "==",
-                    "thresholdValue": "Pending",
-                    "representation": "pending",
-                    "text": "{0}{1}"
-                  },
-                  {
-                    "operator": "==",
-                    "thresholdValue": "OnHold",
-                    "representation": "4",
-                    "text": "{0}{1}"
-                  },
-                  {
-                    "operator": "==",
-                    "thresholdValue": "Canceled",
-                    "representation": "cancelled",
-                    "text": "{0}{1}"
-                  },
-                  {
-                    "operator": "Default",
-                    "representation": "unknown",
-                    "text": "{0}{1}"
-                  }
-                ]
-              }
-            },
             {
               "columnMatch": "AlertClassification",
               "formatter": 18,
