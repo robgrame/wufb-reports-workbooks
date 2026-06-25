@@ -1,0 +1,3 @@
+# Email drafts / communications (never committed)
+*.eml
+communications/*.eml
