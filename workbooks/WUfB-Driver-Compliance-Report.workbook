@@ -165,10 +165,10 @@
             "name": "ModernOnly",
             "type": 2,
             "isRequired": true,
-            "query": "[\n  { \"value\": \"modern\", \"label\": \"Solo PC Modern (esclude Windows 10)\", \"selected\": true },\n  { \"value\": \"all\", \"label\": \"Tutti i PC\" }\n]",
             "typeSettings": {
               "additionalResourceOptions": []
             },
+            "jsonData": "[\n  { \"value\": \"modern\", \"label\": \"Solo PC Modern (esclude Windows 10)\", \"selected\": true },\n  { \"value\": \"all\", \"label\": \"Tutti i PC\" }\n]",
             "queryType": 8,
             "label": "Tipo PC"
           },
