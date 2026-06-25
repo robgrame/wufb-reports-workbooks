@@ -1,0 +1,620 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# 🧩 WUfB - Driver Compliance Report\n\nQuesto workbook traccia lo stato di installazione e gli alert dei **driver e firmware** distribuiti via Windows Update for Business.\n\n**Sorgenti**: `UCClientUpdateStatus`, `UCServiceUpdateStatus`, `UCUpdateAlert`, `UCClient` (filtro `UpdateCategory == \"WindowsDriverUpdate\"`).\n\n> **Filtro Tipo PC:** di default vengono mostrati solo i **PC Modern** (Windows 11; esclusi i Windows 10). Imposta *Tipo PC = Tutti i PC* per includere anche i Windows 10."
+      },
+      "name": "text-header"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "d2a2e001-1111-4a1a-b1c1-111111111111",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 2592000000
+            },
+            "label": "Intervallo Temporale"
+          },
+          {
+            "id": "d2a2e001-2222-4a1a-b1c1-222222222222",
+            "version": "KqlParameterItem/1.0",
+            "name": "UpdateManufacturerFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated > ago(90d)\n| where UpdateCategory == 'WindowsDriverUpdate'\n| distinct UpdateManufacturer\n| where isnotempty(UpdateManufacturer)\n| order by UpdateManufacturer asc",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Vendor Driver"
+          },
+          {
+            "id": "d2a2e001-3333-4a1a-b1c1-333333333333",
+            "version": "KqlParameterItem/1.0",
+            "name": "DeviceManufacturerFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCClient\n| where TimeGenerated > ago(90d)\n| distinct DeviceManufacturer\n| where isnotempty(DeviceManufacturer)\n| order by DeviceManufacturer asc",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "OEM Device"
+          },
+          {
+            "id": "d2a2e001-4444-4a1a-b1c1-444444444444",
+            "version": "KqlParameterItem/1.0",
+            "name": "DeviceModelFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCClient\n| where TimeGenerated > ago(90d)\n| where '*' in ({DeviceManufacturerFilter}) or DeviceManufacturer in ({DeviceManufacturerFilter})\n| distinct DeviceModel\n| where isnotempty(DeviceModel)\n| order by DeviceModel asc",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Modello Device"
+          },
+          {
+            "id": "d2a2e001-5555-4a1a-b1c1-555555555555",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClientStateFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "jsonData": "[\"Installed\",\"Installing\",\"Offering\",\"OnHold\",\"Canceled\",\"Unknown\"]",
+            "value": [
+              "value::all"
+            ],
+            "label": "Stato Client"
+          },
+          {
+            "id": "d2a2e001-6666-4a1a-b1c1-666666666666",
+            "version": "KqlParameterItem/1.0",
+            "name": "OSVersionFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCClient\n| where TimeGenerated > ago(90d)\n| distinct OSVersion\n| where isnotempty(OSVersion)\n| order by OSVersion desc",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "OS Version"
+          },
+          {
+            "id": "d2b2f002-9999-4b2b-c2d2-999999999999",
+            "version": "KqlParameterItem/1.0",
+            "name": "ModernOnly",
+            "type": 2,
+            "isRequired": true,
+            "query": "[\n  { \"value\": \"modern\", \"label\": \"Solo PC Modern (esclude Windows 10)\", \"selected\": true },\n  { \"value\": \"all\", \"label\": \"Tutti i PC\" }\n]",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "queryType": 8,
+            "label": "Tipo PC"
+          },
+          {
+            "id": "d2a2e001-7777-4a1a-b1c1-777777777777",
+            "version": "KqlParameterItem/1.0",
+            "name": "DeviceNameFilter",
+            "type": 1,
+            "value": "",
+            "label": "Filtro Device (contains)"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📊 Compliance Driver per Vendor e Modello Device\n\nAggrega lo stato di installazione *per ogni driver distinto* per combinazione **Vendor driver × OEM × Modello**. `Failed` è ricavato dagli alert attivi (la tabella `UCClientUpdateStatus` non espone direttamente un client state \"Failed\")."
+      },
+      "name": "text-section-summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _vendor   = dynamic([{UpdateManufacturerFilter}]);\nlet _oem      = dynamic([{DeviceManufacturerFilter}]);\nlet _model    = dynamic([{DeviceModelFilter}]);\nlet _state    = dynamic([{ClientStateFilter}]);\nlet _osVer    = dynamic([{OSVersionFilter}]);\nlet _device   = \"{DeviceNameFilter}\";\nlet _modernOnly = \"{ModernOnly}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, DeviceManufacturer, DeviceModel, OSVersion;\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsDriverUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_vendor) or UpdateManufacturer in (_vendor)\n| where _device == \"\" or DeviceName contains _device\n| summarize arg_max(TimeGenerated, *) by DeviceName, UpdateDisplayName\n| where \"*\" in (_state) or ClientState in (_state)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_oem) or DeviceManufacturer in (_oem)\n| where \"*\" in (_model) or DeviceModel in (_model)\n| where \"*\" in (_osVer) or OSVersion in (_osVer)\n| where _modernOnly == \"all\" or not(OSVersion startswith \"Windows 10\")\n| summarize\n    Devices = dcount(DeviceName),\n    Installed = dcountif(DeviceName, ClientState == \"Installed\"),\n    Installing = dcountif(DeviceName, ClientState == \"Installing\"),\n    Offering = dcountif(DeviceName, ClientState == \"Offering\"),\n    OnHold = dcountif(DeviceName, ClientState == \"OnHold\"),\n    Canceled = dcountif(DeviceName, ClientState == \"Canceled\"),\n    Unknown = dcountif(DeviceName, ClientState == \"Unknown\")\n    by UpdateManufacturer, DeviceManufacturer, DeviceModel\n| extend PercentInstalled = round(todouble(Installed) / todouble(Devices) * 100, 1)\n| project\n    UpdateManufacturer,\n    DeviceManufacturer,\n    DeviceModel,\n    Devices,\n    Installed,\n    Installing,\n    Offering,\n    OnHold,\n    Canceled,\n    Unknown,\n    PercentInstalled\n| order by Devices desc",
+        "size": 0,
+        "title": "Compliance Driver per Vendor + Modello",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "PercentInstalled",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "max": 100,
+                "palette": "redGreen"
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            {
+              "itemKey": "Devices",
+              "sortOrder": 2
+            }
+          ]
+        }
+      },
+      "name": "grid-driver-compliance-summary"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 🖥️ Stato Installazione per Device + Driver"
+      },
+      "name": "text-section-device-detail"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _vendor   = dynamic([{UpdateManufacturerFilter}]);\nlet _oem      = dynamic([{DeviceManufacturerFilter}]);\nlet _model    = dynamic([{DeviceModelFilter}]);\nlet _state    = dynamic([{ClientStateFilter}]);\nlet _osVer    = dynamic([{OSVersionFilter}]);\nlet _device   = \"{DeviceNameFilter}\";\nlet _modernOnly = \"{ModernOnly}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, DeviceManufacturer, DeviceModel, OSVersion, OSBuild, OSEdition, LastWUScanTime;\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsDriverUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_vendor) or UpdateManufacturer in (_vendor)\n| where _device == \"\" or DeviceName contains _device\n| summarize arg_max(TimeGenerated, *) by DeviceName, UpdateDisplayName\n| where \"*\" in (_state) or ClientState in (_state)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_oem) or DeviceManufacturer in (_oem)\n| where \"*\" in (_model) or DeviceModel in (_model)\n| where \"*\" in (_osVer) or OSVersion in (_osVer)\n| where _modernOnly == \"all\" or not(OSVersion startswith \"Windows 10\")\n| project\n    DeviceName,\n    DeviceManufacturer,\n    DeviceModel,\n    OSVersion,\n    OSBuild,\n    UpdateManufacturer,\n    UpdateDisplayName,\n    UpdateClassification,\n    TargetVersion,\n    ClientState,\n    ClientSubstate,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    LastWUScanTime,\n    TimeGenerated\n| order by DeviceName asc, UpdateManufacturer asc, UpdateDisplayName asc",
+        "size": 0,
+        "title": "Stato Driver per Device",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "ClientState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Installed",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Installing",
+                    "representation": "2",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Offering",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "OnHold",
+                    "representation": "4",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Canceled",
+                    "representation": "cancelled",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Unknown",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "UpdateClassification",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Drivers",
+                    "representation": "1",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Firmware",
+                    "representation": "2",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            {
+              "itemKey": "DeviceName",
+              "sortOrder": 1
+            }
+          ]
+        }
+      },
+      "name": "grid-driver-device-detail"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## ❌ Driver in Errore o On Hold\n\nElenco dei driver per cui l'ultimo stato è `OnHold` oppure per cui esiste un alert attivo (`AlertStatus == Active`) nella stessa finestra temporale. Per la correlazione `client ↔ alert` viene usata la coppia `AzureADDeviceId + TargetBuild` (la tabella `UCUpdateAlert` non espone `TargetKBNumber`)."
+      },
+      "name": "text-section-errors"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _vendor   = dynamic([{UpdateManufacturerFilter}]);\nlet _oem      = dynamic([{DeviceManufacturerFilter}]);\nlet _model    = dynamic([{DeviceModelFilter}]);\nlet _osVer    = dynamic([{OSVersionFilter}]);\nlet _device   = \"{DeviceNameFilter}\";\nlet _modernOnly = \"{ModernOnly}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, DeviceManufacturer, DeviceModel, OSVersion;\nlet updates = UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsDriverUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_vendor) or UpdateManufacturer in (_vendor)\n| where _device == \"\" or DeviceName contains _device\n| summarize arg_max(TimeGenerated, *) by DeviceName, UpdateDisplayName\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_oem) or DeviceManufacturer in (_oem)\n| where \"*\" in (_model) or DeviceModel in (_model)\n| where \"*\" in (_osVer) or OSVersion in (_osVer)\n| where _modernOnly == \"all\" or not(OSVersion startswith \"Windows 10\")\n| project DeviceName, AzureADDeviceId, DeviceManufacturer, DeviceModel,\n          UpdateManufacturer, UpdateDisplayName, UpdateClassification,\n          TargetBuild, TargetVersion, ClientState, ClientSubstate;\nlet alertInfo = UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsDriverUpdate\"\n| where AlertStatus == \"Active\"\n| where isnotempty(TargetBuild)\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild, AlertSubtype\n| project AzureADDeviceId, TargetBuild, AlertSubtype, AlertClassification, AlertStatus, ErrorCode, ErrorSymName, Recommendation, URL;\nupdates\n| join kind=leftouter alertInfo on AzureADDeviceId, TargetBuild\n| where ClientState == \"OnHold\" or isnotempty(AlertSubtype)\n| project\n    DeviceName,\n    DeviceManufacturer,\n    DeviceModel,\n    UpdateManufacturer,\n    UpdateDisplayName,\n    UpdateClassification,\n    TargetVersion,\n    ClientState,\n    ClientSubstate,\n    AlertSubtype,\n    AlertClassification,\n    AlertStatus,\n    ErrorCode,\n    ErrorSymName,\n    Recommendation,\n    URL\n| order by DeviceName asc, UpdateManufacturer asc",
+        "size": 0,
+        "title": "Driver con errori o OnHold",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "ClientState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "OnHold",
+                    "representation": "4",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Canceled",
+                    "representation": "cancelled",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "AlertClassification",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Error",
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Warning",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "URL",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url",
+                "linkLabel": "KB / docs"
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            {
+              "itemKey": "DeviceName",
+              "sortOrder": 1
+            }
+          ]
+        }
+      },
+      "name": "grid-driver-errors"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 🚦 Stato Service-Side e Alert per Driver\n\nVista lato *Deployment Service* + alert correlati. `ServiceState = Offering` con `ClientState = Installing/Installed` è normale: indicano momenti diversi dello stesso flusso."
+      },
+      "name": "text-section-service-alerts"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _vendor   = dynamic([{UpdateManufacturerFilter}]);\nlet _oem      = dynamic([{DeviceManufacturerFilter}]);\nlet _model    = dynamic([{DeviceModelFilter}]);\nlet _state    = dynamic([{ClientStateFilter}]);\nlet _osVer    = dynamic([{OSVersionFilter}]);\nlet _device   = \"{DeviceNameFilter}\";\nlet _modernOnly = \"{ModernOnly}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, DeviceManufacturer, DeviceModel, OSVersion;\nlet updates = UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsDriverUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_vendor) or UpdateManufacturer in (_vendor)\n| where _device == \"\" or DeviceName contains _device\n| summarize arg_max(TimeGenerated, *) by DeviceName, UpdateDisplayName\n| where \"*\" in (_state) or ClientState in (_state)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_oem) or DeviceManufacturer in (_oem)\n| where \"*\" in (_model) or DeviceModel in (_model)\n| where \"*\" in (_osVer) or OSVersion in (_osVer)\n| where _modernOnly == \"all\" or not(OSVersion startswith \"Windows 10\")\n| project DeviceName, AzureADDeviceId, UpdateManufacturer, UpdateDisplayName,\n          TargetBuild, TargetVersion, ClientState, ClientSubstate;\nlet serviceInfo = UCServiceUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsDriverUpdate\"\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild\n| project AzureADDeviceId, TargetBuild, ServiceState, ServiceSubstate, OfferReadyTime, DeploymentName, PolicyName;\nlet alertInfo = UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsDriverUpdate\"\n| where isnotempty(TargetBuild)\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild, AlertSubtype\n| project AzureADDeviceId, TargetBuild, AlertSubtype, AlertClassification, AlertStatus, ErrorCode;\nupdates\n| join kind=leftouter serviceInfo on AzureADDeviceId, TargetBuild\n| join kind=leftouter alertInfo on AzureADDeviceId, TargetBuild\n| extend Note = case(\n    ClientSubstate in (\"PendingRestart\", \"RestartRequired\", \"PendingReboot\"), \"AwaitingRestart\",\n    ClientState == \"Installed\" and isempty(AlertSubtype), \"OK - Installed\",\n    ClientState == \"Installing\" and isempty(AlertSubtype), strcat(\"In progress: \", ClientSubstate),\n    ClientState == \"Offering\" and isempty(AlertSubtype), \"Offered, not yet started\",\n    ClientState == \"OnHold\", \"On hold (safeguard/policy)\",\n    \"\"\n)\n| project\n    DeviceName,\n    UpdateManufacturer,\n    UpdateDisplayName,\n    TargetVersion,\n    ClientState,\n    ClientSubstate,\n    ServiceState,\n    ServiceSubstate,\n    DeploymentName,\n    PolicyName,\n    AlertSubtype,\n    AlertClassification,\n    AlertStatus,\n    ErrorCode,\n    Note\n| order by DeviceName asc, UpdateManufacturer asc",
+        "size": 0,
+        "title": "Stato Service-Side e Alert per Driver",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "ServiceState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Offering",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Pending",
+                    "representation": "pending",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "OnHold",
+                    "representation": "4",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Canceled",
+                    "representation": "cancelled",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "AlertClassification",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Error",
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Warning",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "AlertStatus",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Active",
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Resolved",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            {
+              "itemKey": "DeviceName",
+              "sortOrder": 1
+            }
+          ]
+        }
+      },
+      "name": "grid-driver-service-alerts"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📦 Inventario Driver Installati"
+      },
+      "name": "text-section-inventory"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _vendor   = dynamic([{UpdateManufacturerFilter}]);\nlet _device   = \"{DeviceNameFilter}\";\nlet _modernOnly = \"{ModernOnly}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, OSVersion;\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsDriverUpdate\"\n| where ClientState == \"Installed\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_vendor) or UpdateManufacturer in (_vendor)\n| where _device == \"\" or DeviceName contains _device\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where _modernOnly == \"all\" or not(OSVersion startswith \"Windows 10\")\n| summarize\n    Installations = dcount(AzureADDeviceId),\n    LastInstall = max(UpdateInstalledTime),\n    FirstSeen = min(UpdateInstalledTime)\n    by UpdateManufacturer, UpdateDisplayName, TargetVersion\n| order by Installations desc",
+        "size": 0,
+        "title": "Driver installati nella finestra selezionata",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Installations",
+              "formatter": 4,
+              "formatOptions": {
+                "min": 0,
+                "palette": "blue"
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            {
+              "itemKey": "Installations",
+              "sortOrder": 2
+            }
+          ]
+        }
+      },
+      "name": "grid-driver-inventory"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n### Note\n- I dati riflettono l'ultimo stato noto per ciascuna combinazione `Device + UpdateDisplayName` nella finestra `TimeRange`.\n- La tabella `UCClientUpdateStatus` non espone un client state `Failed`; gli errori effettivi sono ricostruiti via `UCUpdateAlert` (join su `AzureADDeviceId + TargetBuild`).\n- `UpdateManufacturer` è il vendor del driver (es. Intel, NVIDIA), `DeviceManufacturer`/`DeviceModel` riguardano l'hardware del PC."
+      },
+      "name": "text-footer"
+    }
+  ],
+  "fallbackResourceIds": [],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
+  "styleSettings": {},
+  "fromTemplateId": "custom-wufb-driver-compliance"
+}

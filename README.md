@@ -129,14 +129,38 @@ The `kql/` folder contains standalone queries you can run directly in Log Analyt
 
 | Value | Description |
 |-------|-------------|
-| `Unknown` | No client data available |
-| `Offering` | Update offered to device |
-| `Installing` | Installation in progress |
-| `Installed` | Update successfully installed |
-| `Uninstalling` | Uninstall in progress |
-| `Uninstalled` | Update removed |
-| `Canceled` | Update canceled |
-| `OnHold` | Update on hold |
+| `Unknown` | Il device non ha ancora riportato uno stato per quella KB (scan non eseguito, KB non ancora ricevuta, o problema di reporting). Se persiste va investigato. |
+| `Offering` | La KB è stata *offerta* (visibile in Windows Update) ma l'installazione non è ancora iniziata. Normale finché il device non si collega o aspetta active hour/deadline. |
+| `Installing` | Il workflow di installazione è iniziato. Consultare `ClientSubstate` per il passo corrente (`DownloadStart`, `InstallStart`, `RestartRequired`, ecc.). |
+| `Installed` | KB installata correttamente. |
+| `Uninstalling` | Disinstallazione in corso. |
+| `Uninstalled` | KB rimossa. |
+| `Canceled` | Offerta annullata (policy cambiata, KB superata da una più recente, deployment annullato). |
+| `OnHold` | Bloccato da *safeguard hold* Microsoft (incompatibilità nota), *pause* o *deferral* policy. |
+
+### ClientState vs ServiceState — viste complementari
+
+| Sorgente | Cosa rappresenta |
+|---|---|
+| **ClientState** (`UCClientUpdateStatus`) | Stato *lato device*: cosa sta facendo Windows Update sul PC. |
+| **ServiceState** (`UCServiceUpdateStatus`) | Stato *lato servizio* (Windows Update / Autopatch / Deployment Service): se la KB è stata *offerta* al device dal cloud. Valori: `Pending`, `Offering`, `OnHold`, `Canceled`. |
+
+È normale e atteso che le due colonne non coincidano: il servizio può essere `Offering` (sta offrendo) mentre il device è già `Installing` o `Installed` (ha completato il proprio flusso). Sono fotografie di due momenti/livelli diversi dello stesso processo.
+
+### Alert: Active vs Resolved
+
+- `AlertStatus = Active` → problema in corso, richiede attenzione.
+- `AlertStatus = Resolved` → problema *passato già rientrato* (es. errore transitorio di connettività poi recuperato). **Non richiede azione** anche se compare l'icona di errore sull'`AlertClassification`.
+- Nel workbook **KB Compliance Report** la join degli alert avviene su `AzureADDeviceId` *e* `TargetKBNumber`: gli alert mostrati appartengono alla KB della riga, non ad altre KB storiche dello stesso device.
+
+### Casi particolari di lettura
+
+- **Righe "vuote" nel Service-Side report** → ora la colonna `Note` riporta esplicitamente `AwaitingRestart` quando il device sta solo aspettando il riavvio, `OK - Installed`, `Offered, not yet started`, ecc.
+- **Mismatch device tra report Compliance e Service-Side** → ridotto: il Service-Side ora elenca *tutti* i device del report precedente, indipendentemente dalla presenza di record in `UCServiceUpdateStatus` o `UCUpdateAlert`.
+- **`-1` nelle colonne `WU*DeferralDays / DeadlineDays / GracePeriodDays`** → valore sentinel di Windows; nel workbook viene renderizzato come `NotConfigured`.
+- **Filtro `Tipo PC` (Modern)** → tutti i report sono filtrati di default sui soli **PC Modern** (Windows 11). I device **Windows 10** vengono esclusi automaticamente (predicato `not(OSVersion startswith "Windows 10")`, che mantiene anche i device con `OSVersion` non popolata). Per includerli, impostare *Tipo PC = Tutti i PC*.
+- **Report Service-Side e Alert (KB Compliance) e cumulative** → la join service/alert è in *leftouter* su `AzureADDeviceId` + `TargetBuild`: con *CU Month = All* vengono mostrate **tutte le cumulative**, non solo l'ultima.
+- **Report "Configurazione Update Ring" rimosso** dal workbook *KB Compliance Report*: i dati di deferral risultavano non disponibili (`-1`/vuoti) e il nome device spesso assente.
 
 ### UpdateCategory
 
