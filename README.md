@@ -8,10 +8,20 @@ These workbooks provide visibility into Windows Update deployment status, device
 
 ```
 ├── workbooks/
-│   ├── WUfB-Device-Update-Status.workbook     # General update status (all categories)
-│   └── WUfB-QualityUpdates-Compliance.workbook # Quality Updates focused (Security + NonSecurity)
+│   ├── WUfB-Device-Update-Status.workbook
+│   ├── WUfB-Driver-Compliance-Report.workbook
+│   ├── WUfB-KB-Compliance-Report.workbook
+│   ├── WUfB-KB-Compliance-Report-Hostname-P5.workbook
+│   └── WUfB-QualityUpdates-Compliance.workbook
 ├── kql/
-│   └── WUfB-KQL-Queries.kql                   # Standalone KQL queries for Log Analytics
+│   ├── 01-device-kb-status-detail.kql
+│   ├── 02-kb-compliance-summary.kql
+│   ├── 03-devices-not-installed.kql
+│   ├── 04-blocked-problematic-devices.kql
+│   ├── 05-install-timeline.kql
+│   ├── 06-state-distribution-by-category.kql
+│   ├── 07-quality-updates-with-device-info.kql
+│   └── 08-active-alerts-unified.kql
 ├── images/
 └── README.md
 ```
@@ -53,7 +63,28 @@ Focused workbook for **Quality Updates only** (Security and Non-Security), integ
 | `UCUpdateAlert` | Alerts for specific update issues (connectivity, WU errors, etc.) |
 | `UCDeviceAlert` | Device-level alerts (EndOfService, missing updates, diagnostics) |
 
+### 3. WUfB - Driver Compliance Report
+
+Driver and firmware compliance based on `UpdateCategory == "DriverUpdate"`.
+Client, service, and alert records are correlated using `AzureADDeviceId` and
+the driver-specific `UpdateId`. Service or alert records without `UpdateId`
+are intentionally not correlated.
+
+### 4. WUfB - KB Compliance Report
+
+Quality-update compliance by KB, with CU month, OS, client-state, and device
+filters. The Hostname P5 variant applies the additional MP5/WP5/KP5/TP5/MS5/
+WS5/KS5/TS5 hostname prefixes.
+
+Compliance percentages named `PercentInstalledReported` use only devices that
+reported a status for the selected update. They must not be interpreted as the
+percentage of the entire managed fleet.
+
 ## 🚀 Deployment
+
+Published workbooks are immutable release points. Every deployment must create
+a new workbook resource with an incremented display-name version (for example,
+`WUfB - KB Compliance Report v9`) instead of updating an existing workbook.
 
 ### Option 1: Import via Azure Portal (UI)
 
@@ -70,6 +101,7 @@ Focused workbook for **Quality Updates only** (Security and Non-Security), integ
 $resourceGroup = "rg-wufb-reports"
 $workspaceName = "law-wufb-reports"
 $workbookFile = "workbooks/WUfB-QualityUpdates-Compliance.workbook"
+$workbookVersion = "v1"
 
 # Get workspace ID
 $workspaceId = az monitor log-analytics workspace show `
@@ -93,7 +125,7 @@ $arm = @{
     location = "westeurope"  # Change to your region
     kind = "shared"
     properties = @{
-      displayName = "WUfB - Quality Updates Compliance"
+      displayName = "WUfB - Quality Updates Compliance $workbookVersion"
       serializedData = $serialized
       version = "1.0"
       sourceId = $workspaceId

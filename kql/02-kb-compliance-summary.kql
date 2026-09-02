@@ -2,15 +2,17 @@
 // Quanti device hanno installato / stanno installando ogni KB
 UCClientUpdateStatus
 | where TimeGenerated > ago(7d)
-| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)
+| extend UpdateKey = coalesce(UpdateId, TargetKBNumber, strcat(UpdateDisplayName, "|", TargetBuild))
+| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, UpdateKey
 | summarize
-    TotalDevices = dcount(DeviceName),
-    Installed = dcountif(DeviceName, ClientState == "Installed"),
-    Installing = dcountif(DeviceName, ClientState == "Installing"),
-    Offering = dcountif(DeviceName, ClientState == "Offering"),
-    OnHold = dcountif(DeviceName, ClientState == "OnHold"),
-    Canceled = dcountif(DeviceName, ClientState == "Canceled"),
-    Unknown = dcountif(DeviceName, ClientState == "Unknown")
-    by TargetKBNumber, UpdateDisplayName, UpdateCategory, UpdateClassification
-| extend PercentInstalled = round(todouble(Installed) / todouble(TotalDevices) * 100, 1)
+    ReportingDevices = dcount(AzureADDeviceId),
+    Installed = dcountif(AzureADDeviceId, ClientState == "Installed"),
+    Installing = dcountif(AzureADDeviceId, ClientState == "Installing"),
+    Offering = dcountif(AzureADDeviceId, ClientState == "Offering"),
+    OnHold = dcountif(AzureADDeviceId, ClientState == "OnHold"),
+    Canceled = dcountif(AzureADDeviceId, ClientState == "Canceled"),
+    Unknown = dcountif(AzureADDeviceId, ClientState == "Unknown")
+    by UpdateKey, TargetKBNumber, UpdateDisplayName, UpdateCategory, UpdateClassification
+| extend PercentInstalledReported = round(todouble(Installed) / todouble(ReportingDevices) * 100, 1)
 | sort by TargetKBNumber desc

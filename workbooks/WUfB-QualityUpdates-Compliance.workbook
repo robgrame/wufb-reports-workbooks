@@ -21,15 +21,27 @@
             "isRequired": true,
             "typeSettings": {
               "selectableValues": [
-                { "durationMs": 86400000 },
-                { "durationMs": 259200000 },
-                { "durationMs": 604800000 },
-                { "durationMs": 1209600000 },
-                { "durationMs": 2592000000 }
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                }
               ],
               "allowCustom": true
             },
-            "value": { "durationMs": 604800000 },
+            "value": {
+              "durationMs": 604800000
+            },
             "label": "Intervallo Temporale"
           },
           {
@@ -43,7 +55,9 @@
             "delimiter": ",",
             "query": "UCClientUpdateStatus\n| where TimeGenerated > ago(30d)\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct UpdateClassification\n| order by UpdateClassification asc",
             "typeSettings": {
-              "additionalResourceOptions": [ "value::all" ],
+              "additionalResourceOptions": [
+                "value::all"
+              ],
               "selectAllValue": "*"
             },
             "defaultValue": "value::all",
@@ -78,17 +92,28 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName\n| summarize\n    TotalDevices = count(),\n    QualityLatest = countif(OSQualityUpdateStatus == \"Latest\"),\n    QualityNotLatest = countif(OSQualityUpdateStatus == \"NotLatest\"),\n    SecurityLatest = countif(OSSecurityUpdateStatus == \"Latest\"),\n    SecurityNotLatest = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    SecurityMultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| summarize\n    TotalDevices = count(),\n    QualityLatest = countif(OSQualityUpdateStatus == \"Latest\"),\n    QualityNotLatest = countif(OSQualityUpdateStatus == \"NotLatest\"),\n    SecurityLatest = countif(OSSecurityUpdateStatus == \"Latest\"),\n    SecurityNotLatest = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    SecurityMultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")",
         "size": 4,
         "title": "Stato Compliance Globale",
-        "timeContext": { "durationMs": 0 },
+        "timeContext": {
+          "durationMs": 0
+        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "tiles",
         "tileSettings": {
-          "titleContent": { "columnMatch": "Column1", "formatter": 1 },
-          "leftContent": { "columnMatch": "TotalDevices", "formatter": 12, "formatOptions": { "palette": "auto" } },
+          "titleContent": {
+            "columnMatch": "Column1",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "TotalDevices",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            }
+          },
           "showBorder": true
         }
       },
@@ -98,19 +123,30 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName\n| summarize Devices = count() by OSSecurityUpdateStatus\n| order by Devices desc",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| summarize Devices = count() by OSSecurityUpdateStatus\n| order by Devices desc",
         "size": 3,
         "title": "Security Update Status",
-        "timeContext": { "durationMs": 0 },
+        "timeContext": {
+          "durationMs": 0
+        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "piechart",
         "chartSettings": {
           "seriesLabelSettings": [
-            { "seriesName": "Latest", "color": "green" },
-            { "seriesName": "NotLatest", "color": "orange" },
-            { "seriesName": "MultipleSecurityUpdatesMissing", "color": "redBright" }
+            {
+              "seriesName": "Latest",
+              "color": "green"
+            },
+            {
+              "seriesName": "NotLatest",
+              "color": "orange"
+            },
+            {
+              "seriesName": "MultipleSecurityUpdatesMissing",
+              "color": "redBright"
+            }
           ]
         }
       },
@@ -121,18 +157,26 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName\n| summarize Devices = count() by OSQualityUpdateStatus\n| order by Devices desc",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| summarize Devices = count() by OSQualityUpdateStatus\n| order by Devices desc",
         "size": 3,
         "title": "Quality Update Status",
-        "timeContext": { "durationMs": 0 },
+        "timeContext": {
+          "durationMs": 0
+        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "piechart",
         "chartSettings": {
           "seriesLabelSettings": [
-            { "seriesName": "Latest", "color": "green" },
-            { "seriesName": "NotLatest", "color": "orange" }
+            {
+              "seriesName": "Latest",
+              "color": "green"
+            },
+            {
+              "seriesName": "NotLatest",
+              "color": "orange"
+            }
           ]
         }
       },
@@ -150,10 +194,12 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _classification = dynamic([{UpdateClassificationFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| join kind=leftouter (\n    UCClient\n    | where TimeGenerated > ago(30d)\n    | summarize arg_max(TimeGenerated, *) by DeviceName\n    | project DeviceName, OSVersion, OSBuild, OSEdition, WUQualityDeferralDays, WUQualityPauseState, LastWUScanTime\n) on DeviceName\n| project\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    ClientSubstateTime,\n    TargetBuild,\n    UpdateReleaseTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    OSVersion,\n    OSBuild,\n    OSEdition,\n    WUQualityDeferralDays,\n    WUQualityPauseState,\n    LastWUScanTime,\n    TimeGenerated\n| order by DeviceName asc, TargetKBNumber asc",
+        "query": "let _classification = dynamic([{UpdateClassificationFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetKBNumber\n| join kind=leftouter (\n    UCClient\n    | where TimeGenerated {TimeRange}\n    | summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n    | project AzureADDeviceId, OSVersion, OSBuild, OSEdition, WUQualityDeferralDays, WUQualityPauseState, LastWUScanTime\n) on AzureADDeviceId\n| project\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    ClientSubstateTime,\n    TargetBuild,\n    UpdateReleaseTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    OSVersion,\n    OSBuild,\n    OSEdition,\n    WUQualityDeferralDays,\n    WUQualityPauseState,\n    LastWUScanTime,\n    TimeGenerated\n| order by DeviceName asc, TargetKBNumber asc",
         "size": 0,
         "title": "Dettaglio Quality Update per Device (con info device da UCClient)",
-        "timeContext": { "durationMs": 0 },
+        "timeContext": {
+          "durationMs": 0
+        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -166,13 +212,47 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "Installed", "representation": "success", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Installing", "representation": "2", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Offering", "representation": "warning", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "OnHold", "representation": "4", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Canceled", "representation": "cancelled", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Unknown", "representation": "unknown", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Installed",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Installing",
+                    "representation": "2",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Offering",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "OnHold",
+                    "representation": "4",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Canceled",
+                    "representation": "cancelled",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Unknown",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             },
@@ -182,16 +262,33 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "Security", "representation": "3", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "NonSecurity", "representation": "1", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Security",
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "NonSecurity",
+                    "representation": "1",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             }
           ],
           "filter": true,
           "sortBy": [
-            { "itemKey": "DeviceName", "sortOrder": 1 }
+            {
+              "itemKey": "DeviceName",
+              "sortOrder": 1
+            }
           ]
         }
       },
@@ -200,7 +297,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## 📈 Riepilogo Compliance per KB"
+        "json": "## 📈 Riepilogo Compliance per KB\n\nLa percentuale usa come denominatore soltanto i device che hanno prodotto uno stato per la KB."
       },
       "name": "text-section-kb-summary"
     },
@@ -208,10 +305,12 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _classification = dynamic([{UpdateClassificationFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| summarize\n    TotalDevices = dcount(DeviceName),\n    Installed = dcountif(DeviceName, ClientState == \"Installed\"),\n    Installing = dcountif(DeviceName, ClientState == \"Installing\"),\n    Offering = dcountif(DeviceName, ClientState == \"Offering\"),\n    OnHold = dcountif(DeviceName, ClientState == \"OnHold\"),\n    Unknown = dcountif(DeviceName, ClientState == \"Unknown\")\n    by TargetKBNumber, UpdateDisplayName, UpdateClassification, UpdateReleaseTime\n| extend PercentInstalled = round(todouble(Installed) / todouble(TotalDevices) * 100, 1)\n| order by UpdateReleaseTime desc",
+        "query": "let _classification = dynamic([{UpdateClassificationFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetKBNumber\n| summarize\n    ReportingDevices = dcount(AzureADDeviceId),\n    Installed = dcountif(AzureADDeviceId, ClientState == \"Installed\"),\n    Installing = dcountif(AzureADDeviceId, ClientState == \"Installing\"),\n    Offering = dcountif(AzureADDeviceId, ClientState == \"Offering\"),\n    OnHold = dcountif(AzureADDeviceId, ClientState == \"OnHold\"),\n    Unknown = dcountif(AzureADDeviceId, ClientState == \"Unknown\")\n    by TargetKBNumber, UpdateDisplayName, UpdateClassification, UpdateReleaseTime\n| extend PercentInstalledReported = round(todouble(Installed) / todouble(ReportingDevices) * 100, 1)\n| order by UpdateReleaseTime desc",
         "size": 0,
-        "title": "Compliance per KB (% installazione)",
-        "timeContext": { "durationMs": 0 },
+        "title": "Compliance per KB tra device con stato riportato",
+        "timeContext": {
+          "durationMs": 0
+        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -219,7 +318,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "PercentInstalled",
+              "columnMatch": "PercentInstalledReported",
               "formatter": 8,
               "formatOptions": {
                 "min": 0,
@@ -244,10 +343,12 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "UCServiceUpdateStatus\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild\n| summarize DeviceCount = count() by ServiceState, ServiceSubstate, UpdateCategory, UpdateDisplayName, TargetBuild\n| order by UpdateCategory asc, ServiceState asc, DeviceCount desc",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, DeviceName;\nUCServiceUpdateStatus\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild\n| join kind=leftouter clientInfo on AzureADDeviceId\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize DeviceCount = dcount(AzureADDeviceId) by ServiceState, ServiceSubstate, UpdateCategory, UpdateDisplayName, TargetBuild\n| order by UpdateCategory asc, ServiceState asc, DeviceCount desc",
         "size": 0,
         "title": "Service Update Status - Stato dell'offerta lato servizio",
-        "timeContext": { "durationMs": 0 },
+        "timeContext": {
+          "durationMs": 0
+        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -260,11 +361,35 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "Offering", "representation": "success", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Pending", "representation": "pending", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "OnHold", "representation": "4", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Canceled", "representation": "cancelled", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Offering",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Pending",
+                    "representation": "pending",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "OnHold",
+                    "representation": "4",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Canceled",
+                    "representation": "cancelled",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             }
@@ -288,7 +413,9 @@
         "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AlertId\n| project\n    DeviceName,\n    UpdateCategory,\n    AlertType,\n    AlertSubtype,\n    AlertClassification,\n    AlertStatus,\n    Description,\n    Recommendation,\n    ErrorCode,\n    TargetBuild,\n    ClientSubstate,\n    StartTime,\n    ResolvedTime,\n    TimeGenerated\n| order by AlertStatus asc, AlertClassification desc, DeviceName asc",
         "size": 0,
         "title": "Update Alert - Problemi su Update (tutti i tipi)",
-        "timeContext": { "durationMs": 0 },
+        "timeContext": {
+          "durationMs": 0
+        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -301,10 +428,29 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "Error", "representation": "3", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Warning", "representation": "warning", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Informational", "representation": "1", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Error",
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Warning",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Informational",
+                    "representation": "1",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             }
@@ -321,7 +467,9 @@
         "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCDeviceAlert\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AlertId\n| project\n    DeviceName,\n    AlertType,\n    AlertSubtype,\n    AlertClassification,\n    AlertStatus,\n    Description,\n    Recommendation,\n    ErrorCode,\n    StartTime,\n    ResolvedTime,\n    TimeGenerated\n| order by AlertStatus asc, AlertClassification desc, DeviceName asc",
         "size": 0,
         "title": "Device Alert - Problemi generali dei device (Active + Resolved)",
-        "timeContext": { "durationMs": 0 },
+        "timeContext": {
+          "durationMs": 0
+        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -334,10 +482,29 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "Error", "representation": "3", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Warning", "representation": "warning", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Informational", "representation": "1", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Error",
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Warning",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Informational",
+                    "representation": "1",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             },
@@ -347,9 +514,23 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "MultipleSecurityUpdatesMissing", "representation": "3", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "EndOfService", "representation": "critical", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "warning", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "MultipleSecurityUpdatesMissing",
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "EndOfService",
+                    "representation": "critical",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             }
@@ -370,10 +551,12 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName\n| project\n    DeviceName,\n    OSVersion,\n    OSBuild,\n    OSEdition,\n    OSQualityUpdateStatus,\n    OSSecurityUpdateStatus,\n    WUQualityDeferralDays,\n    WUQualityPauseState,\n    WUQualityDeadlineDays,\n    WUQualityGracePeriodDays,\n    LastWUScanTime,\n    UpdateConnectivityLevel,\n    DeviceManufacturer,\n    DeviceModel\n| order by DeviceName asc",
+        "query": "let _deviceFilter = \"{DeviceNameFilter}\";\nUCClient\n| where TimeGenerated {TimeRange}\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project\n    DeviceName,\n    OSVersion,\n    OSBuild,\n    OSEdition,\n    OSQualityUpdateStatus,\n    OSSecurityUpdateStatus,\n    WUQualityDeferralDays,\n    WUQualityPauseState,\n    WUQualityDeadlineDays,\n    WUQualityGracePeriodDays,\n    LastWUScanTime,\n    UpdateConnectivityLevel,\n    DeviceManufacturer,\n    DeviceModel\n| order by DeviceName asc",
         "size": 0,
         "title": "Configurazione Windows Update e Stato OS per Device",
-        "timeContext": { "durationMs": 0 },
+        "timeContext": {
+          "durationMs": 0
+        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -386,9 +569,23 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "Latest", "representation": "success", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "NotLatest", "representation": "warning", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Latest",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "NotLatest",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             },
@@ -398,10 +595,29 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "Latest", "representation": "success", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "NotLatest", "representation": "warning", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "MultipleSecurityUpdatesMissing", "representation": "3", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Latest",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "NotLatest",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "MultipleSecurityUpdatesMissing",
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             },
@@ -411,9 +627,23 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "NotConfigured", "representation": "success", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Paused", "representation": "3", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "NotConfigured",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Paused",
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             }

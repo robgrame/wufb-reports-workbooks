@@ -21,11 +21,21 @@
             "isRequired": true,
             "typeSettings": {
               "selectableValues": [
-                { "durationMs": 86400000 },
-                { "durationMs": 259200000 },
-                { "durationMs": 604800000 },
-                { "durationMs": 1209600000 },
-                { "durationMs": 2592000000 }
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                }
               ],
               "allowCustom": true
             },
@@ -103,7 +113,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _updateCat = dynamic([{UpdateCategoryFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where \"*\" in (_updateCat) or UpdateCategory in (_updateCat)\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| summarize DeviceCount = dcount(DeviceName) by ClientState\n| order by DeviceCount desc",
+        "query": "let _updateCat = dynamic([{UpdateCategoryFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where \"*\" in (_updateCat) or UpdateCategory in (_updateCat)\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| extend UpdateKey = coalesce(UpdateId, TargetKBNumber, strcat(UpdateDisplayName, \"|\", TargetBuild))\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, UpdateKey\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| summarize DeviceCount = dcount(AzureADDeviceId) by ClientState\n| order by DeviceCount desc",
         "size": 3,
         "title": "Distribuzione Device per Stato di Installazione",
         "timeContext": {
@@ -115,12 +125,30 @@
         "visualization": "piechart",
         "chartSettings": {
           "seriesLabelSettings": [
-            { "seriesName": "Installed", "color": "green" },
-            { "seriesName": "Installing", "color": "blue" },
-            { "seriesName": "Offering", "color": "orange" },
-            { "seriesName": "OnHold", "color": "yellow" },
-            { "seriesName": "Canceled", "color": "gray" },
-            { "seriesName": "Unknown", "color": "redBright" }
+            {
+              "seriesName": "Installed",
+              "color": "green"
+            },
+            {
+              "seriesName": "Installing",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Offering",
+              "color": "orange"
+            },
+            {
+              "seriesName": "OnHold",
+              "color": "yellow"
+            },
+            {
+              "seriesName": "Canceled",
+              "color": "gray"
+            },
+            {
+              "seriesName": "Unknown",
+              "color": "redBright"
+            }
           ]
         }
       },
@@ -130,7 +158,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _updateCat = dynamic([{UpdateCategoryFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where \"*\" in (_updateCat) or UpdateCategory in (_updateCat)\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| summarize DeviceCount = dcount(DeviceName) by ClientState, ClientSubstate\n| order by ClientState asc, DeviceCount desc",
+        "query": "let _updateCat = dynamic([{UpdateCategoryFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where \"*\" in (_updateCat) or UpdateCategory in (_updateCat)\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| extend UpdateKey = coalesce(UpdateId, TargetKBNumber, strcat(UpdateDisplayName, \"|\", TargetBuild))\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, UpdateKey\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| summarize DeviceCount = dcount(AzureADDeviceId) by ClientState, ClientSubstate\n| order by ClientState asc, DeviceCount desc",
         "size": 0,
         "title": "Dettaglio Device per ClientState e ClientSubstate",
         "timeContext": {
@@ -161,7 +189,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _updateCat = dynamic([{UpdateCategoryFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where \"*\" in (_updateCat) or UpdateCategory in (_updateCat)\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| project\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateCategory,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    ClientSubstateTime,\n    TargetBuild,\n    TargetVersion,\n    UpdateReleaseTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    TimeGenerated\n| order by DeviceName asc, TargetKBNumber asc",
+        "query": "let _updateCat = dynamic([{UpdateCategoryFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where \"*\" in (_updateCat) or UpdateCategory in (_updateCat)\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| extend UpdateKey = coalesce(UpdateId, TargetKBNumber, strcat(UpdateDisplayName, \"|\", TargetBuild))\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, UpdateKey\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| project\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateCategory,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    ClientSubstateTime,\n    TargetBuild,\n    TargetVersion,\n    UpdateReleaseTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    TimeGenerated\n| order by DeviceName asc, TargetKBNumber asc",
         "size": 0,
         "title": "Stato Aggiornamento per Device e KB",
         "timeContext": {
@@ -179,20 +207,57 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "Installed", "representation": "success", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Installing", "representation": "2", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Offering", "representation": "warning", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "OnHold", "representation": "4", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Canceled", "representation": "cancelled", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Unknown", "representation": "unknown", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "unknown", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Installed",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Installing",
+                    "representation": "2",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Offering",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "OnHold",
+                    "representation": "4",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Canceled",
+                    "representation": "cancelled",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Unknown",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             }
           ],
           "filter": true,
           "sortBy": [
-            { "itemKey": "DeviceName", "sortOrder": 1 }
+            {
+              "itemKey": "DeviceName",
+              "sortOrder": 1
+            }
           ]
         }
       },
@@ -201,7 +266,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## 🔍 Riepilogo per KB - Quanti device hanno installato ciascuna KB"
+        "json": "## 🔍 Riepilogo per aggiornamento\n\nUsa una chiave composta con fallback UpdateId → TargetKBNumber → nome/build, così vengono mantenuti distinti driver, quality e feature update."
       },
       "name": "text-kb-summary-header"
     },
@@ -209,9 +274,9 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _updateCat = dynamic([{UpdateCategoryFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where \"*\" in (_updateCat) or UpdateCategory in (_updateCat)\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| summarize\n    TotalDevices = dcount(DeviceName),\n    Installed = dcountif(DeviceName, ClientState == \"Installed\"),\n    Installing = dcountif(DeviceName, ClientState == \"Installing\"),\n    Offering = dcountif(DeviceName, ClientState == \"Offering\"),\n    OnHold = dcountif(DeviceName, ClientState == \"OnHold\"),\n    Canceled = dcountif(DeviceName, ClientState == \"Canceled\"),\n    Unknown = dcountif(DeviceName, ClientState == \"Unknown\")\n    by TargetKBNumber, UpdateDisplayName, UpdateCategory, UpdateClassification\n| extend PercentInstalled = round(todouble(Installed) / todouble(TotalDevices) * 100, 1)\n| order by TargetKBNumber desc",
+        "query": "let _updateCat = dynamic([{UpdateCategoryFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where \"*\" in (_updateCat) or UpdateCategory in (_updateCat)\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| extend UpdateKey = coalesce(UpdateId, TargetKBNumber, strcat(UpdateDisplayName, \"|\", TargetBuild))\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, UpdateKey\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| summarize\n    ReportingDevices = dcount(AzureADDeviceId),\n    Installed = dcountif(AzureADDeviceId, ClientState == \"Installed\"),\n    Installing = dcountif(AzureADDeviceId, ClientState == \"Installing\"),\n    Offering = dcountif(AzureADDeviceId, ClientState == \"Offering\"),\n    OnHold = dcountif(AzureADDeviceId, ClientState == \"OnHold\"),\n    Canceled = dcountif(AzureADDeviceId, ClientState == \"Canceled\"),\n    Unknown = dcountif(AzureADDeviceId, ClientState == \"Unknown\")\n    by UpdateKey, TargetKBNumber, UpdateDisplayName, UpdateCategory, UpdateClassification\n| extend PercentInstalledReported = round(todouble(Installed) / todouble(ReportingDevices) * 100, 1)\n| order by TargetKBNumber desc",
         "size": 0,
-        "title": "Riepilogo Compliance per KB",
+        "title": "Riepilogo compliance per update tra device con stato riportato",
         "timeContext": {
           "durationMs": 0
         },
@@ -222,7 +287,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "PercentInstalled",
+              "columnMatch": "PercentInstalledReported",
               "formatter": 8,
               "formatOptions": {
                 "min": 0,
@@ -240,7 +305,10 @@
           ],
           "filter": true,
           "sortBy": [
-            { "itemKey": "PercentInstalled", "sortOrder": 2 }
+            {
+              "itemKey": "PercentInstalledReported",
+              "sortOrder": 2
+            }
           ]
         }
       },
@@ -257,7 +325,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _updateCat = dynamic([{UpdateCategoryFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where \"*\" in (_updateCat) or UpdateCategory in (_updateCat)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber\n| where ClientState in (\"OnHold\", \"Canceled\", \"Unknown\") or ClientSubstate in (\"Validation\", \"SafeguardHold\")\n| project\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateCategory,\n    ClientState,\n    ClientSubstate,\n    ClientSubstateTime,\n    TimeGenerated\n| order by ClientState asc, DeviceName asc",
+        "query": "let _updateCat = dynamic([{UpdateCategoryFilter}]);\nlet _deviceFilter = \"{DeviceNameFilter}\";\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where \"*\" in (_updateCat) or UpdateCategory in (_updateCat)\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| extend UpdateKey = coalesce(UpdateId, TargetKBNumber, strcat(UpdateDisplayName, \"|\", TargetBuild))\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, UpdateKey\n| where ClientState in (\"OnHold\", \"Canceled\", \"Unknown\") or ClientSubstate in (\"Validation\", \"SafeguardHold\")\n| project\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateCategory,\n    ClientState,\n    ClientSubstate,\n    ClientSubstateTime,\n    TimeGenerated\n| order by ClientState asc, DeviceName asc",
         "size": 0,
         "title": "Device con Update Bloccati o Problematici",
         "timeContext": {
@@ -275,10 +343,29 @@
               "formatOptions": {
                 "thresholdsOptions": "icons",
                 "thresholdsGrid": [
-                  { "operator": "==", "thresholdValue": "OnHold", "representation": "4", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Canceled", "representation": "cancelled", "text": "{0}{1}" },
-                  { "operator": "==", "thresholdValue": "Unknown", "representation": "unknown", "text": "{0}{1}" },
-                  { "operator": "Default", "representation": "warning", "text": "{0}{1}" }
+                  {
+                    "operator": "==",
+                    "thresholdValue": "OnHold",
+                    "representation": "4",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Canceled",
+                    "representation": "cancelled",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Unknown",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  }
                 ]
               }
             }

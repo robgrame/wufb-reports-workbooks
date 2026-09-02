@@ -3,13 +3,15 @@
 UCClientUpdateStatus
 | where TimeGenerated > ago(30d)
 | where ClientState == "Installed"
-| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)
+| extend UpdateKey = coalesce(UpdateId, TargetKBNumber, strcat(UpdateDisplayName, "|", TargetBuild))
+| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, UpdateKey
 | where isnotempty(OfferReceivedTime) and isnotempty(UpdateInstalledTime)
 | extend InstallDurationHours = datetime_diff('hour', UpdateInstalledTime, OfferReceivedTime)
 | summarize
     AvgInstallHours = round(avg(InstallDurationHours), 1),
     MaxInstallHours = max(InstallDurationHours),
     MinInstallHours = min(InstallDurationHours),
-    DeviceCount = dcount(DeviceName)
-    by TargetKBNumber, UpdateDisplayName
+    DeviceCount = dcount(AzureADDeviceId)
+    by UpdateKey, TargetKBNumber, UpdateDisplayName
 | sort by AvgInstallHours desc
