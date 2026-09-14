@@ -2,7 +2,9 @@
 // Mostra l'ultimo stato di ciascun device per ogni KB target
 UCClientUpdateStatus
 | where TimeGenerated > ago(7d)
-| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)
+| extend UpdateKey = coalesce(UpdateId, TargetKBNumber, strcat(UpdateDisplayName, "|", TargetBuild))
+| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, UpdateKey
 | project
     DeviceName,
     TargetKBNumber,

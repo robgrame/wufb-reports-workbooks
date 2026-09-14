@@ -3,16 +3,17 @@
 UCClientUpdateStatus
 | where TimeGenerated > ago(7d)
 | where UpdateCategory == "WindowsQualityUpdate"
-| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)
+| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetKBNumber
 | join kind=leftouter (
     UCClient
     | where TimeGenerated > ago(30d)
-    | summarize arg_max(TimeGenerated, *) by DeviceName
-    | project DeviceName, OSVersion, OSBuild, OSEdition,
+    | summarize arg_max(TimeGenerated, *) by AzureADDeviceId
+    | project AzureADDeviceId, OSVersion, OSBuild, OSEdition,
              OSSecurityUpdateStatus, OSQualityUpdateStatus,
              WUQualityDeferralDays, WUQualityPauseState,
              WUQualityDeadlineDays, LastWUScanTime
-) on DeviceName
+) on AzureADDeviceId
 | project
     DeviceName,
     TargetKBNumber,

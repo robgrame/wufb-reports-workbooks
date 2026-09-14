@@ -2,7 +2,9 @@
 // OnHold, Canceled, Unknown, SafeguardHold, Validation
 UCClientUpdateStatus
 | where TimeGenerated > ago(7d)
-| summarize arg_max(TimeGenerated, *) by DeviceName, TargetKBNumber
+| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)
+| extend UpdateKey = coalesce(UpdateId, TargetKBNumber, strcat(UpdateDisplayName, "|", TargetBuild))
+| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, UpdateKey
 | where ClientState in ("OnHold", "Canceled", "Unknown")
     or ClientSubstate in ("Validation", "SafeguardHold")
 | project
