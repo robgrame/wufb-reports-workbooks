@@ -12,7 +12,8 @@ These workbooks provide visibility into Windows Update deployment status, device
 │   ├── WUfB-Driver-Compliance-Report.workbook
 │   ├── WUfB-KB-Compliance-Report.workbook
 │   ├── WUfB-KB-Compliance-Report-Hostname-P5.workbook
-│   └── WUfB-QualityUpdates-Compliance.workbook
+│   ├── WUfB-QualityUpdates-Compliance.workbook
+│   └── WUfB-Branch-Health-Dashboard.workbook
 ├── kql/
 │   ├── 01-device-kb-status-detail.kql
 │   ├── 02-kb-compliance-summary.kql
@@ -79,6 +80,17 @@ WS5/KS5/TS5 hostname prefixes.
 Compliance percentages named `PercentInstalledReported` use only devices that
 reported a status for the selected update. They must not be interpreted as the
 percentage of the entire managed fleet.
+
+### 5. WUfB - Branch/Country Health Dashboard
+
+Security compliance gap per **Branch/Sede** (dedotto dal prefisso hostname del
+`DeviceName`, stessa convenzione MP5/WP5/... usata per il filtro Modern-PC) e
+per `Country`, mostrato come **grafico a barre ordinato per severità**
+(🟢 OK / 🟡 Warning / 🔴 Critical) invece di una tabella o mappa geografica: più
+leggibile quando i siti sono pochi o concentrati in un unico Paese. Una tabella
+di dettaglio con heatmap colorata (`ComplianceGapPercent`) resta disponibile
+per il drill-down numerico. Adattare la regex di estrazione del Branch alla
+propria naming convention se diversa da quella usata negli altri workbook.
 
 ## 🚀 Deployment
 
