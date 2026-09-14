@@ -1,0 +1,21 @@
+// Alert: nuovi codici di errore comparsi su più device
+// UCUpdateAlert.ErrorCode e' popolato (a differenza di UCDeviceAlert.ErrorCode,
+// non ancora raccolto da Microsoft). Segnala codici errore attivi su almeno
+// N device distinti nelle ultime 24 ore, utile per rilevare un problema
+// sistemico (es. un bad driver o una KB con incompatibilita' diffusa).
+let MinDevices = 5;
+UCUpdateAlert
+| where StartTime > ago(1d)
+| where AlertStatus == "Active"
+| where isnotempty(ErrorCode)
+| summarize
+    Devices = dcount(AzureADDeviceId),
+    SampleDevices = make_set(DeviceName, 5)
+    by ErrorCode, ErrorSymName, AlertClassification, UpdateCategory
+| where Devices >= MinDevices
+| sort by Devices desc
+
+// Alert rule suggerita:
+//   Measurement: Table rows
+//   Threshold: Greater than 0
+//   Evaluation frequency: 1h, Period: 1d

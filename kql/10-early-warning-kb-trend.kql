@@ -1,0 +1,20 @@
+// Early Warning Dashboard - trend giornaliero successi/fallimenti per KB
+// Utile per rilevare un peggioramento del failure rate su una KB specifica
+// nei giorni successivi al rilascio (early warning su bad update).
+UCClientUpdateStatus
+| where TimeGenerated > ago(30d)
+| where UpdateCategory == "WindowsQualityUpdate"
+| summarize arg_max(TimeGenerated, ClientState) by AzureADDeviceId, TargetKBNumber, bin(TimeGenerated, 1d)
+| summarize
+    Installed = countif(ClientState == "Installed"),
+    Failed = countif(ClientState in ("OnHold", "Canceled")),
+    Installing = countif(ClientState == "Installing"),
+    Total = count()
+    by Day = bin(TimeGenerated, 1d), TargetKBNumber
+| extend
+    SuccessRatePercent = round(100.0 * Installed / Total, 1),
+    FailureRatePercent = round(100.0 * Failed / Total, 1)
+| sort by TargetKBNumber desc, Day asc
+
+// Suggerimento workbook: grafico a linee (Day su asse X, FailureRatePercent su Y,
+// serie per TargetKBNumber) con soglia condizionale rossa oltre una % configurabile.
