@@ -47,11 +47,12 @@
             "name": "ModernOnly",
             "type": 2,
             "isRequired": true,
+            "query": "datatable(value:string, label:string, selected:bool)\n[\n  'modern', 'Solo PC Modern (esclude Windows 10)', true,\n  'all', 'Tutti i PC', false\n]",
             "typeSettings": {
               "additionalResourceOptions": []
             },
-            "jsonData": "[\n  { \"value\": \"modern\", \"label\": \"Solo PC Modern (esclude Windows 10)\", \"selected\": true },\n  { \"value\": \"all\", \"label\": \"Tutti i PC\" }\n]",
-            "queryType": 8,
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
             "label": "Tipo PC"
           },
           {
