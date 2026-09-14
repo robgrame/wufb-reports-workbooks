@@ -63,18 +63,16 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
+            "query": "datatable(sortOrder:int, value:string, label:string)\n[\n  1, 'Critical', '🔴 Critical (gap >= 30%)',\n  2, 'Warning', '🟡 Warning (gap >= 10%)',\n  3, 'OK', '🟢 OK (gap < 10%)'\n]\n| order by sortOrder asc\n| project value, label",
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::all"
               ],
-              "selectAllValue": "*",
-              "showDefault": false
+              "selectAllValue": "*"
             },
-            "jsonData": "[\n  { \"value\": \"Critical\", \"label\": \"🔴 Critical (gap >= 30%)\" },\n  { \"value\": \"Warning\", \"label\": \"🟡 Warning (gap >= 10%)\" },\n  { \"value\": \"OK\", \"label\": \"🟢 OK (gap < 10%)\" }\n]",
-            "queryType": 8,
-            "value": [
-              "value::all"
-            ],
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
             "label": "Severità"
           }
         ],
