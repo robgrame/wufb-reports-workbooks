@@ -14,7 +14,8 @@ These workbooks provide visibility into Windows Update deployment status, device
 │   ├── WUfB-KB-Compliance-Report-Hostname-P5.workbook
 │   ├── WUfB-QualityUpdates-Compliance.workbook
 │   ├── WUfB-Branch-Health-Dashboard.workbook
-│   └── WUfB-KB-Early-Warning-Dashboard.workbook
+│   ├── WUfB-KB-Early-Warning-Dashboard.workbook
+│   └── WUfB-Advanced-Monitoring-Suite.workbook
 ├── kql/
 │   ├── 01-device-kb-status-detail.kql
 │   ├── 02-kb-compliance-summary.kql
@@ -111,6 +112,24 @@ parameter, default 15%). A detail table below lists only the CU Month/Day
 combinations that exceed the threshold (with the specific `TargetKBNumber`(s)
 behind each month for traceability), ready for follow-up (pause rollout, open
 a support case). Standalone query: `kql/10-early-warning-kb-trend.kql`.
+
+### 7. WUfB - Advanced Monitoring Suite
+
+Single tabbed workbook consolidating all advanced-monitoring topics into one
+place, sharing a global `TimeRange` parameter across tabs:
+
+| Tab | Content |
+|---|---|
+| 📦 DO Efficiency by Site | Delivery Optimization bandwidth-savings % broken down by hostname-derived site/branch and by `Country`/`City` (query 9) |
+| 🚨 Early Warning Dashboard | Same content as the standalone **KB Early Warning Dashboard** workbook (line chart per `CUMonth` + red threshold line + over-threshold detail table) |
+| 💻 Device Health Correlation | Failed installs joined with Intune inventory (`DeviceManufacturer`/`DeviceModel`), highlighting models with disproportionate failure rates (query 11) |
+| 🔔 Custom KQL Alerting | Read-only previews of the 3 alert queries — device stopped scanning (query 12), DO efficiency drop (query 13), new error codes on multiple devices (query 14) — each using its own fixed time window by design (not the global `TimeRange`), ready to be wired into Azure Monitor Scheduled Query Rules |
+| 📊 Power BI Integration | Guidance-only tab (no live query): two supported integration paths — Power BI "Get Data → Azure Monitor Logs" connector, or Diagnostic Settings → Storage/Event Hub → Dataflow/Stream Analytics |
+| 🌍 Country/Branch Heatmap | Same content as the standalone **Branch/Country Health Dashboard** workbook (severity-sorted bar chart + geographic map with fixed `heatmapMin`/`heatmapMax` + detail table) |
+
+This workbook complements rather than replaces the two standalone workbooks
+it reuses content from (**KB Early Warning Dashboard**, **Branch/Country
+Health Dashboard**), which remain available for focused, single-topic use.
 
 ## 🚀 Deployment
 

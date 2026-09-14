@@ -1,0 +1,874 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# 🧭 WUfB - Advanced Monitoring Suite\n\nSingle consolidated workbook answering the customer's advanced monitoring questions, one tab per topic:\n\n| Tab | Question | Status |\n|---|---|---|\n| 📦 DO Efficiency by Site | Can we break down the Delivery Optimization report by site or subnet? | ⚠️ Partial (site derived from hostname, no native Site/Subnet field) |\n| 🚨 Early Warning Dashboard | KB success & failure trends | ✅ Full |\n| 💻 Device Health Correlation | Are updates failing on a specific model type? | ⚠️ Requires Intune inventory join |\n| 🔔 Custom KQL Alerting | Devices stop scanning, DO efficiency drops, new error codes on multiple devices | ✅ Full (as Scheduled Query Rules) |\n| 📊 Power BI Integration | — | ✅ Yes (external, guidance only) |\n| 🌍 Country/Branch Heatmap | Update Health by country/branch | ✅ Full |\n\n> This workbook combines and supersedes the standalone **Branch/Country Health Dashboard** and **KB Early Warning Dashboard** workbooks (their content is reproduced here as tabs) so the customer has one single place to look. The standalone workbooks and the underlying `kql/09`-`15` queries remain available for reuse/automation."
+      },
+      "name": "text-header"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "a0a0a001-0000-4a1a-b1c1-000000000001",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 604800000
+            },
+            "label": "Time Range (applies to all tabs)"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "global-parameters"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "cellValue": "Tab",
+            "linkTarget": "parameter",
+            "linkLabel": "📦 DO Efficiency by Site",
+            "subTarget": "DOSite",
+            "preText": "",
+            "style": "link"
+          },
+          {
+            "cellValue": "Tab",
+            "linkTarget": "parameter",
+            "linkLabel": "🚨 Early Warning Dashboard",
+            "subTarget": "EarlyWarning",
+            "style": "link"
+          },
+          {
+            "cellValue": "Tab",
+            "linkTarget": "parameter",
+            "linkLabel": "💻 Device Health Correlation",
+            "subTarget": "DeviceHealth",
+            "style": "link"
+          },
+          {
+            "cellValue": "Tab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔔 Custom KQL Alerting",
+            "subTarget": "Alerting",
+            "style": "link"
+          },
+          {
+            "cellValue": "Tab",
+            "linkTarget": "parameter",
+            "linkLabel": "📊 Power BI Integration",
+            "subTarget": "PowerBI",
+            "style": "link"
+          },
+          {
+            "cellValue": "Tab",
+            "linkTarget": "parameter",
+            "linkLabel": "🌍 Country/Branch Heatmap",
+            "subTarget": "BranchHeatmap",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 📦 Delivery Optimization Efficiency by Site\n\n**Question**: *Can we break down the Delivery Optimization report by site or subnet?*\n\n`UCDOStatus` has no native `Site`/`Subnet` field. `Site` below is derived from the `DeviceName` hostname prefix (adjust the regex to your own naming convention). For a real subnet/site mapping, join with a custom reference table (e.g. a `SiteSubnetMap` table loaded into the workspace, keyed by IP range or AD site) instead of parsing the hostname.\n\n**EfficiencyPercent** = share of bytes served from local Cache/Peers vs. CDN (higher = better, less WAN/internet bandwidth used)."
+            },
+            "name": "do-site-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "UCDOStatus\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, ContentType\n| extend Site = extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)\n| extend Site = iff(isempty(Site), \"Unknown\", Site)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    AvgBWOptPercent7Days = round(avg(BWOptPercent7Days), 1),\n    AvgBWOptPercent28Days = round(avg(BWOptPercent28Days), 1),\n    TotalBytesFromCache = sum(BytesFromCache),\n    TotalBytesFromCDN = sum(BytesFromCDN),\n    TotalBytesFromPeers = sum(BytesFromPeers)\n    by Site, Country, City\n| extend EfficiencyPercent = round(100.0 * TotalBytesFromCache / (TotalBytesFromCache + TotalBytesFromCDN + 1), 1)\n| project Site, Country, City, Devices, EfficiencyPercent, AvgBWOptPercent7Days, AvgBWOptPercent28Days\n| sort by Devices desc",
+              "size": 0,
+              "title": "DO Efficiency by Site (7/28-day averages)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "barchart",
+              "chartSettings": {
+                "xAxis": "Site",
+                "yAxis": [
+                  "EfficiencyPercent",
+                  "AvgBWOptPercent7Days"
+                ],
+                "createOtherGroup": 0
+              }
+            },
+            "name": "chart-do-site"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "UCDOStatus\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, ContentType\n| extend Site = extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)\n| extend Site = iff(isempty(Site), \"Unknown\", Site)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    AvgBWOptPercent7Days = round(avg(BWOptPercent7Days), 1),\n    AvgBWOptPercent28Days = round(avg(BWOptPercent28Days), 1),\n    TotalBytesFromCache = sum(BytesFromCache),\n    TotalBytesFromCDN = sum(BytesFromCDN),\n    TotalBytesFromPeers = sum(BytesFromPeers)\n    by Site, Country, City\n| extend EfficiencyPercent = round(100.0 * TotalBytesFromCache / (TotalBytesFromCache + TotalBytesFromCDN + 1), 1)\n| project Site, Country, City, Devices, EfficiencyPercent, AvgBWOptPercent7Days, AvgBWOptPercent28Days, TotalBytesFromCache, TotalBytesFromCDN, TotalBytesFromPeers\n| sort by Devices desc",
+              "size": 0,
+              "title": "DO Efficiency by Site - detail",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "EfficiencyPercent",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "redGreen"
+                    }
+                  },
+                  {
+                    "columnMatch": "AvgBWOptPercent7Days",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "redGreen"
+                    }
+                  }
+                ],
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "Devices",
+                    "sortOrder": 2
+                  }
+                ]
+              }
+            },
+            "name": "grid-do-site-detail"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "Standalone query: `kql/09-delivery-optimization-by-site.kql`."
+            },
+            "name": "do-site-footer"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "Tab",
+        "comparison": "isEqualTo",
+        "value": "DOSite"
+      },
+      "name": "group-do-site"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🚨 KB Early Warning Dashboard\n\n**Question**: *KB success & failure trends.*\n\nDaily success/failure rate trend per **Cumulative Update month** (`CUMonth`, derived from `UpdateReleaseTime` as `yyyy-MM` — same convention as the **KB Compliance Report** workbook), so a worsening quality update can be spotted in the days following its release, before it becomes a widespread compliance problem.\n\n**Chart**: one line per `CUMonth` (`FailureRatePercent` by `Day`), plus a flat red **Alert Threshold** reference line at a configurable %.\n\n**Source**: `UCClientUpdateStatus`, filtered on `UpdateCategory == \"WindowsQualityUpdate\"`. `Failed` counts `ClientState` in `OnHold`/`Canceled` (safeguard hold, deferral, or canceled offering)."
+            },
+            "name": "ew-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "a0a0a002-1111-4a1a-b1c1-111111111111",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "CUMonthFilter",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| distinct CUMonth\n| order by CUMonth desc\n| project value = CUMonth, label = CUMonth",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "selectAllValue": "*"
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "label": "CU Month"
+                },
+                {
+                  "id": "a0a0a002-2222-4a1a-b1c1-222222222222",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "FailureThreshold",
+                  "type": 1,
+                  "isRequired": true,
+                  "value": 15,
+                  "label": "Failure Rate Alert Threshold (%)"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "ew-parameters"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let _threshold = toreal({FailureThreshold});\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _kbTrend = UCClientUpdateStatus\n    | where TimeGenerated {TimeRange}\n    | where UpdateCategory == \"WindowsQualityUpdate\"\n    | where isnotempty(UpdateReleaseTime)\n    | extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n    | where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n    | summarize arg_max(TimeGenerated, ClientState) by AzureADDeviceId, TargetKBNumber, CUMonth, bin(TimeGenerated, 1d)\n    | summarize\n        Installed = countif(ClientState == \"Installed\"),\n        Failed = countif(ClientState in (\"OnHold\", \"Canceled\")),\n        Total = count()\n        by Day = bin(TimeGenerated, 1d), CUMonth\n    | extend FailureRatePercent = round(100.0 * Failed / Total, 1)\n    | project Day, CUMonth, FailureRatePercent;\nlet _days = _kbTrend | distinct Day;\nlet _thresholdLine = _days\n    | extend CUMonth = \"⚠ Alert Threshold\", FailureRatePercent = _threshold\n    | project Day, CUMonth, FailureRatePercent;\n_kbTrend\n| union _thresholdLine\n| sort by CUMonth asc, Day asc",
+              "size": 0,
+              "title": "Daily Failure Rate % by CU Month (with alert threshold)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "Day",
+                "yAxis": [
+                  "FailureRatePercent"
+                ],
+                "group": "CUMonth",
+                "createOtherGroup": 0,
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "⚠ Alert Threshold",
+                    "color": "redBright"
+                  }
+                ]
+              }
+            },
+            "name": "chart-kb-failure-rate-trend"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 📋 Days Above Threshold\n\nOnly the CU Month/Day combinations where `FailureRatePercent` exceeds the configured threshold — the actionable early-warning list. The `KBs` column lists the specific `TargetKBNumber`(s) released in that CU month, for traceability."
+            },
+            "name": "ew-detail-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let _threshold = toreal({FailureThreshold});\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| summarize arg_max(TimeGenerated, ClientState) by AzureADDeviceId, TargetKBNumber, CUMonth, bin(TimeGenerated, 1d)\n| summarize\n    Installed = countif(ClientState == \"Installed\"),\n    Failed = countif(ClientState in (\"OnHold\", \"Canceled\")),\n    Installing = countif(ClientState == \"Installing\"),\n    Total = count(),\n    KBs = make_set(TargetKBNumber)\n    by Day = bin(TimeGenerated, 1d), CUMonth\n| extend\n    SuccessRatePercent = round(100.0 * Installed / Total, 1),\n    FailureRatePercent = round(100.0 * Failed / Total, 1)\n| where FailureRatePercent > _threshold\n| extend Status = \"Above Threshold\"\n| project Day, CUMonth, KBs, Total, Installed, Failed, Installing, SuccessRatePercent, FailureRatePercent, Status\n| sort by Day desc, FailureRatePercent desc",
+              "size": 0,
+              "title": "CU Month/Day above the Failure Rate Alert Threshold",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "FailureRatePercent",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "greenRed"
+                    }
+                  },
+                  {
+                    "columnMatch": "SuccessRatePercent",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "redGreen"
+                    }
+                  },
+                  {
+                    "columnMatch": "Status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Above Threshold",
+                          "representation": "3",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "Day",
+                    "sortOrder": 1
+                  }
+                ]
+              }
+            },
+            "name": "grid-kb-above-threshold"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "Standalone query: `kql/10-early-warning-kb-trend.kql`. Full standalone workbook: `WUfB-KB-Early-Warning-Dashboard.workbook`."
+            },
+            "name": "ew-footer"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "Tab",
+        "comparison": "isEqualTo",
+        "value": "EarlyWarning"
+      },
+      "name": "group-early-warning"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 💻 Device Health Correlation by Model\n\n**Question**: *Are updates failing on a specific model type?*\n\n> ⚠️ **Requires an external join.** `UCClient.DeviceManufacturer`/`DeviceModel` are documented by Microsoft as *\"currently not gathered\"* (not populated) in the WUfB Reports schema. This query joins failed-install records with an **Intune device inventory table** (`IntuneDevices`, keyed by `AzureADDeviceId`, with `Model`/`Manufacturer` columns) that must exist in this workspace — typically populated via a Microsoft Graph `managedDevices` export (Logic App/Function/Data Export). If `IntuneDevices` does not exist yet, the query below will fail with a \"table not found\" error; that's expected until the join table is created."
+            },
+            "name": "dh-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where ClientState in (\"OnHold\", \"Canceled\", \"Unknown\")\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetKBNumber\n| join kind=inner (\n    IntuneDevices\n    | summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n    | project AzureADDeviceId, Model, Manufacturer\n) on AzureADDeviceId\n| summarize\n    FailedDevices = dcount(AzureADDeviceId),\n    FailedInstalls = count()\n    by Model, Manufacturer\n| sort by FailedDevices desc",
+              "size": 0,
+              "title": "Failed Installs by Device Model",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "barchart",
+              "chartSettings": {
+                "xAxis": "Model",
+                "yAxis": [
+                  "FailedDevices"
+                ],
+                "group": "Manufacturer",
+                "createOtherGroup": 0
+              }
+            },
+            "name": "chart-device-health-by-model"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where ClientState in (\"OnHold\", \"Canceled\", \"Unknown\")\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetKBNumber\n| join kind=inner (\n    IntuneDevices\n    | summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n    | project AzureADDeviceId, Model, Manufacturer\n) on AzureADDeviceId\n| summarize\n    FailedDevices = dcount(AzureADDeviceId),\n    FailedInstalls = count()\n    by Model, Manufacturer, TargetKBNumber\n| sort by FailedDevices desc",
+              "size": 0,
+              "title": "Failed Installs by Device Model - detail (per KB)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "FailedDevices",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  }
+                ],
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "FailedDevices",
+                    "sortOrder": 2
+                  }
+                ]
+              }
+            },
+            "name": "grid-device-health-detail"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "Standalone query: `kql/11-device-health-by-model.kql`."
+            },
+            "name": "dh-footer"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "Tab",
+        "comparison": "isEqualTo",
+        "value": "DeviceHealth"
+      },
+      "name": "group-device-health"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔔 Custom KQL Alerting\n\n**Question**: *Can we create custom alerting for: devices that stop scanning for updates, sudden Delivery Optimization efficiency drops, new error codes appearing on multiple devices?*\n\n✅ Yes — each query below is designed to be wrapped in an Azure Monitor **Scheduled Query Rule** (Alert rule): point the rule at this Log Analytics workspace, paste the query, set the suggested threshold/frequency noted under each table, and attach an action group (email/Teams/ITSM). The tables below run the same logic live, so you can validate results before creating the rule."
+            },
+            "name": "alert-header"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 1️⃣ Devices that stopped scanning for updates\n\n**Suggested alert rule**: Measurement = Table rows, Threshold = Greater than 0, Evaluation frequency = 1d, Period = 1d."
+            },
+            "name": "alert-1-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "UCClient\n| summarize arg_max(TimeGenerated, LastWUScanTime) by AzureADDeviceId, DeviceName\n| extend DaysSinceLastScan = datetime_diff('day', now(), LastWUScanTime)\n| where DaysSinceLastScan > 14\n| project DeviceName, AzureADDeviceId, LastWUScanTime, DaysSinceLastScan\n| sort by DaysSinceLastScan desc",
+              "size": 0,
+              "title": "Devices with no update scan in > 14 days",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "DaysSinceLastScan",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "name": "grid-alert-stopped-scanning"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 2️⃣ Sudden Delivery Optimization efficiency drop\n\nCompares today's average `BWOptPercent7Days` with the previous day; flags a drop greater than 30% (fixed 14-day lookback, independent from the Time Range picker above, needed to always have both today's and yesterday's value). **Suggested alert rule**: Measurement = Table rows, Threshold = Greater than 0, Evaluation frequency = 1d, Period = 2d."
+            },
+            "name": "alert-2-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "UCDOStatus\n| where TimeGenerated > ago(14d)\n| summarize CurrEff = avg(BWOptPercent7Days) by Day = bin(TimeGenerated, 1d)\n| sort by Day asc\n| extend PrevEff = prev(CurrEff)\n| where isnotnull(PrevEff) and PrevEff > 0\n| extend DropPercent = round(100.0 * (PrevEff - CurrEff) / PrevEff, 1)\n| where DropPercent > 30\n| project Day, CurrEff, PrevEff, DropPercent\n| sort by Day desc",
+              "size": 0,
+              "title": "Day-over-day DO efficiency drop > 30%",
+              "timeContext": {
+                "durationMs": 1209600000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "DropPercent",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "name": "grid-alert-do-drop"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 3️⃣ New error codes on multiple devices\n\n`UCUpdateAlert.ErrorCode` is populated (unlike `UCDeviceAlert.ErrorCode`, not yet collected by Microsoft). Flags error codes active on at least `MinDevicesForErrorCodeAlert` distinct devices in the last 24 hours — useful for detecting a systemic issue (e.g. a bad driver or a KB with widespread incompatibility). **Suggested alert rule**: Measurement = Table rows, Threshold = Greater than 0, Evaluation frequency = 1h, Period = 1d."
+            },
+            "name": "alert-3-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "a0a0a004-1111-4a1a-b1c1-111111111111",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "MinDevicesForErrorCodeAlert",
+                  "type": 1,
+                  "isRequired": true,
+                  "value": 5,
+                  "label": "Min. distinct devices for a new-error-code alert"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "alert-3-parameters"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let _minDevices = toint({MinDevicesForErrorCodeAlert});\nUCUpdateAlert\n| where StartTime > ago(1d)\n| where AlertStatus == \"Active\"\n| where isnotempty(ErrorCode)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    SampleDevices = make_set(DeviceName, 5)\n    by ErrorCode, ErrorSymName, AlertClassification, UpdateCategory\n| where Devices >= _minDevices\n| sort by Devices desc",
+              "size": 0,
+              "title": "Error codes active on multiple devices (last 24h)",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Devices",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "name": "grid-alert-new-error-codes"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "Standalone queries (ready to paste into a Scheduled Query Rule): `kql/12-alert-device-stopped-scanning.kql`, `kql/13-alert-do-efficiency-drop.kql`, `kql/14-alert-new-error-codes.kql`."
+            },
+            "name": "alert-footer"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "Tab",
+        "comparison": "isEqualTo",
+        "value": "Alerting"
+      },
+      "name": "group-alerting"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 📊 Power BI Integration\n\n**Question**: *Can WUfB Reports data be integrated with Power BI?*\n\n✅ Yes, via two complementary paths (no native one-click export exists from Log Analytics/Workbooks):\n\n### Option A — Power BI \"Azure Monitor Logs\" connector (recommended for dashboards refreshed on a schedule)\n1. In Power BI Desktop: **Get Data → Azure Monitor Logs** (or **Blank Query** with `AzureLogAnalytics.Query(\"<workspace-id>\", \"<KQL query>\")`).\n2. Reuse the same KQL used in this workbook/the `kql/` folder as the query text (e.g. `kql/09-delivery-optimization-by-site.kql`, `kql/15-country-compliance-heatmap.kql`).\n3. Set a scheduled refresh in the Power BI service (import mode) — DirectQuery to Log Analytics is not supported, only Import.\n4. Rebuild the visuals natively in Power BI (bar/line charts, maps, matrix tables) using the imported result set; this also unlocks Power BI-specific features (row-level security, mobile layout, paginated reports, native Teams/SharePoint embedding).\n\n### Option B — Diagnostic Settings → Storage/Event Hub → Power BI dataflow (for retention beyond Log Analytics or near-real-time streaming)\n1. Configure a **Diagnostic Setting** (or continuous export) on the Log Analytics workspace/tables to send data to an **Azure Storage account** or **Event Hub**.\n2. From Storage: build a Power BI **Dataflow**/Azure Data Factory pipeline reading the exported blobs (useful when retention needs to exceed the Log Analytics limit, or data needs to be blended with non-Azure sources).\n3. From Event Hub: use **Azure Stream Analytics** with a Power BI streaming dataset output for near-real-time tiles (seconds-level latency) — typically used only for the alerting/monitoring KPIs (e.g. active alert count), not full historical drill-down.\n\n### Which one to choose\n| Need | Recommended path |\n|---|---|\n| Scheduled (e.g. daily) exec-level Power BI report, reusing existing KQL | Option A (connector) |\n| Retention/history beyond Log Analytics's own retention | Option B (Storage export) |\n| Near real-time KPI tile (seconds-level) | Option B (Event Hub + Stream Analytics) |\n\nNo query runs in this tab — it is guidance only; the KQL to reuse is the same used throughout this workbook and in the `kql/` folder."
+            },
+            "name": "powerbi-content"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "Tab",
+        "comparison": "isEqualTo",
+        "value": "PowerBI"
+      },
+      "name": "group-powerbi"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🌍 Country/Branch Heatmap for Update Health\n\n**Question**: *Country/Branch Heatmap for Update Health.*\n\nSecurity compliance gap (devices not on the latest security update) grouped by **Branch/Site** and by **Country**, combining a **sorted bar chart** (best for ranking many sites/branches) with a **geographic map** (best for a quick country-level view, since `Country` is a field natively populated by WUfB Reports).\n\n**Bar chart (by Branch/Site)**: bar color follows a severity threshold (🟢 OK / 🟡 Warning / 🔴 Critical). **Map (by Country)**: bubble size = device count, bubble color = compliance gap % (green → red heatmap).\n\n**Source**: `UCClient` (filtered on `OSSecurityUpdateStatus`).\n\n> **Branch** (bar chart only) is derived from the `DeviceName` hostname prefix; adjust the regex to your own naming convention. The map instead groups directly by the native `Country` field, no hostname parsing needed."
+            },
+            "name": "bh-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "a0a0a005-1111-4a1a-b1c1-111111111111",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "SeverityFilter",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "datatable(sortOrder:int, value:string, label:string)\n[\n  1, 'Critical', '🔴 Critical (gap >= 30%)',\n  2, 'Warning', '🟡 Warning (gap >= 10%)',\n  3, 'OK', '🟢 OK (gap < 10%)'\n]\n| order by sortOrder asc\n| project value, label",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "selectAllValue": "*"
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "label": "Severity"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "bh-parameters"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let _severity = dynamic([{SeverityFilter}]);\nUCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| extend Branch = extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)\n| extend Branch = iff(isempty(Branch), strcat(\"Unknown (\", coalesce(Country, \"N/A\"), \")\"), Branch)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    NotLatestSecurity = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    MultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")\n    by Branch, Country\n| extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)\n| extend Severity = case(\n    ComplianceGapPercent >= 30, \"Critical\",\n    ComplianceGapPercent >= 10, \"Warning\",\n    \"OK\")\n| where \"*\" in (_severity) or Severity in (_severity)\n| project Branch, Country, Devices, NotLatestSecurity, MultipleMissing, ComplianceGapPercent, Severity\n| sort by ComplianceGapPercent desc",
+              "size": 0,
+              "title": "Compliance Gap by Branch/Site (sorted worst first)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "barchart",
+              "chartSettings": {
+                "xAxis": "Branch",
+                "yAxis": [
+                  "ComplianceGapPercent"
+                ],
+                "group": "Severity",
+                "createOtherGroup": 0,
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Critical",
+                    "color": "redBright"
+                  },
+                  {
+                    "seriesName": "Warning",
+                    "color": "yellow"
+                  },
+                  {
+                    "seriesName": "OK",
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "name": "chart-branch-compliance-gap-bar"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 🗺️ Compliance Gap by Country"
+            },
+            "name": "bh-map-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let _severity = dynamic([{SeverityFilter}]);\nUCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| where isnotempty(Country)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    NotLatestSecurity = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    MultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")\n    by Country\n| extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)\n| extend Severity = case(\n    ComplianceGapPercent >= 30, \"Critical\",\n    ComplianceGapPercent >= 10, \"Warning\",\n    \"OK\")\n| where \"*\" in (_severity) or Severity in (_severity)\n| project Country, Devices, ComplianceGapPercent, Severity\n| sort by ComplianceGapPercent desc",
+              "size": 0,
+              "title": "Compliance Gap by Country (map)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "map",
+              "mapSettings": {
+                "locInfo": "CountryRegion",
+                "locInfoColumn": "Country",
+                "sizeSettings": "Devices",
+                "sizeAggregation": "Sum",
+                "legendMetric": "ComplianceGapPercent",
+                "legendAggregation": "Avg",
+                "itemColorSettings": {
+                  "nodeColorField": "ComplianceGapPercent",
+                  "colorAggregation": "Avg",
+                  "type": "heatmap",
+                  "heatmapPalette": "greenRed",
+                  "heatmapMin": 0,
+                  "heatmapMax": 100
+                }
+              }
+            },
+            "name": "map-country-compliance-gap"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 📋 Detail by Branch/Site"
+            },
+            "name": "bh-detail-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let _severity = dynamic([{SeverityFilter}]);\nUCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| extend Branch = extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)\n| extend Branch = iff(isempty(Branch), strcat(\"Unknown (\", coalesce(Country, \"N/A\"), \")\"), Branch)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    NotLatestSecurity = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    MultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")\n    by Branch, Country\n| extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)\n| extend Severity = case(\n    ComplianceGapPercent >= 30, \"Critical\",\n    ComplianceGapPercent >= 10, \"Warning\",\n    \"OK\")\n| where \"*\" in (_severity) or Severity in (_severity)\n| project Branch, Country, Devices, NotLatestSecurity, MultipleMissing, ComplianceGapPercent, Severity\n| sort by ComplianceGapPercent desc",
+              "size": 0,
+              "title": "Compliance Gap Detail by Branch/Site",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "ComplianceGapPercent",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "greenRed"
+                    }
+                  },
+                  {
+                    "columnMatch": "Devices",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "blue"
+                    }
+                  },
+                  {
+                    "columnMatch": "Severity",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Critical",
+                          "representation": "3",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Warning",
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "OK",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "ComplianceGapPercent",
+                    "sortOrder": 2
+                  }
+                ]
+              }
+            },
+            "name": "grid-branch-compliance-detail"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "Standalone query: `kql/15-country-compliance-heatmap.kql`. Full standalone workbook: `WUfB-Branch-Health-Dashboard.workbook`."
+            },
+            "name": "bh-footer"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "Tab",
+        "comparison": "isEqualTo",
+        "value": "BranchHeatmap"
+      },
+      "name": "group-branch-heatmap"
+    }
+  ],
+  "fallbackResourceIds": [],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
+  "styleSettings": {},
+  "fromTemplateId": "custom-wufb-advanced-monitoring-suite"
+}
