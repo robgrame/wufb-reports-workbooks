@@ -1,0 +1,221 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# 🌍 WUfB - Branch/Country Health Dashboard\n\nQuesto workbook mostra il **compliance gap di sicurezza** (device non aggiornati all'ultima security update) raggruppato per **Branch/Sede** e **Country**, in forma di **grafico a barre ordinato** invece di una semplice tabella o mappa geografica.\n\n**Perché un grafico a barre invece di una mappa geografica:**\n- Una mappa mondo è utile solo quando i siti sono distribuiti su molti Paesi diversi; con poche country o con più sedi nello stesso Paese, il grafico a barre ordinato per gap di compliance è molto più leggibile a colpo d'occhio (ranking immediato dei siti peggiori).\n- Il colore delle barre segue una soglia di severità (🟢 OK / 🟡 Warning / 🔴 Critical) invece di un gradiente continuo, più facile da interpretare rispetto a un heatmap a gradiente.\n\n**Sorgente**: `UCClient` (filtro `OSSecurityUpdateStatus`).\n\n> **Branch** è dedotto dal prefisso del `DeviceName` (stessa convenzione hostname usata per il filtro Modern-PC, es. `MP5-`, `WP5-`, ecc.). Se la vostra naming convention è diversa, adattare la regex nella query (`extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)`). In assenza di un prefisso riconoscibile, il device viene raggruppato come `Unknown (Country)`.\n\n> **Filtro Tipo PC:** di default vengono mostrati solo i **PC Modern** (Windows 11; esclusi i Windows 10). Imposta *Tipo PC = Tutti i PC* per includere anche i Windows 10."
+      },
+      "name": "text-header"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "e3a3f001-1111-4a1a-b1c1-111111111111",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 604800000
+            },
+            "label": "Intervallo Temporale"
+          },
+          {
+            "id": "e3a3f001-2222-4a1a-b1c1-222222222222",
+            "version": "KqlParameterItem/1.0",
+            "name": "ModernOnly",
+            "type": 2,
+            "isRequired": true,
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\n  { \"value\": \"modern\", \"label\": \"Solo PC Modern (esclude Windows 10)\", \"selected\": true },\n  { \"value\": \"all\", \"label\": \"Tutti i PC\" }\n]",
+            "queryType": 8,
+            "label": "Tipo PC"
+          },
+          {
+            "id": "e3a3f001-3333-4a1a-b1c1-333333333333",
+            "version": "KqlParameterItem/1.0",
+            "name": "SeverityFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "jsonData": "[\n  { \"value\": \"Critical\", \"label\": \"🔴 Critical (gap >= 30%)\" },\n  { \"value\": \"Warning\", \"label\": \"🟡 Warning (gap >= 10%)\" },\n  { \"value\": \"OK\", \"label\": \"🟢 OK (gap < 10%)\" }\n]",
+            "queryType": 8,
+            "value": [
+              "value::all"
+            ],
+            "label": "Severità"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _modernOnly = \"{ModernOnly}\";\nlet _severity = dynamic([{SeverityFilter}]);\nUCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| where _modernOnly == \"all\" or isempty(OSVersion) or not(OSVersion startswith \"Windows 10\")\n| extend Branch = extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)\n| extend Branch = iff(isempty(Branch), strcat(\"Unknown (\", coalesce(Country, \"N/D\"), \")\"), Branch)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    NotLatestSecurity = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    MultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")\n    by Branch, Country\n| extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)\n| extend Severity = case(\n    ComplianceGapPercent >= 30, \"Critical\",\n    ComplianceGapPercent >= 10, \"Warning\",\n    \"OK\")\n| where \"*\" in (_severity) or Severity in (_severity)\n| project Branch, Country, Devices, NotLatestSecurity, MultipleMissing, ComplianceGapPercent, Severity\n| sort by ComplianceGapPercent desc",
+        "size": 0,
+        "title": "Compliance Gap per Branch/Sede (ordinato dal peggiore)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "barchart",
+        "chartSettings": {
+          "xAxis": "Branch",
+          "yAxis": [
+            "ComplianceGapPercent"
+          ],
+          "group": "Severity",
+          "createOtherGroup": 0,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Critical",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Warning",
+              "color": "yellow"
+            },
+            {
+              "seriesName": "OK",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "name": "chart-branch-compliance-gap-bar"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📋 Dettaglio per Branch/Sede\n\nTabella di supporto con heatmap colorata sulla colonna `ComplianceGapPercent`, per il drill-down numerico dietro al grafico."
+      },
+      "name": "text-detail-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _modernOnly = \"{ModernOnly}\";\nlet _severity = dynamic([{SeverityFilter}]);\nUCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| where _modernOnly == \"all\" or isempty(OSVersion) or not(OSVersion startswith \"Windows 10\")\n| extend Branch = extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)\n| extend Branch = iff(isempty(Branch), strcat(\"Unknown (\", coalesce(Country, \"N/D\"), \")\"), Branch)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    NotLatestSecurity = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    MultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")\n    by Branch, Country\n| extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)\n| extend Severity = case(\n    ComplianceGapPercent >= 30, \"Critical\",\n    ComplianceGapPercent >= 10, \"Warning\",\n    \"OK\")\n| where \"*\" in (_severity) or Severity in (_severity)\n| project Branch, Country, Devices, NotLatestSecurity, MultipleMissing, ComplianceGapPercent, Severity\n| sort by ComplianceGapPercent desc",
+        "size": 0,
+        "title": "Dettaglio Compliance Gap per Branch/Sede",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "ComplianceGapPercent",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "max": 100,
+                "palette": "greenRed"
+              }
+            },
+            {
+              "columnMatch": "Devices",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "Severity",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Critical",
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Warning",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "OK",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            {
+              "itemKey": "ComplianceGapPercent",
+              "sortOrder": 2
+            }
+          ]
+        }
+      },
+      "name": "grid-branch-compliance-detail"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n### Note\n- **Severity bucket**: Critical (gap ≥ 30%), Warning (gap ≥ 10% e < 30%), OK (gap < 10%). Soglie modificabili direttamente nella query (`case(...)`).\n- Il grafico a barre raggruppa per `Severity` in modo che il colore sia immediato senza dover leggere i numeri; la tabella sotto fornisce il dettaglio numerico e resta ordinabile/filtrabile.\n- Per una vista puramente geografica (mappa mondo), la stessa query raggruppata solo per `Country` può essere riutilizzata con `visualization: \"map\"` — vedi `kql/15-country-compliance-heatmap.kql`."
+      },
+      "name": "text-footer"
+    }
+  ],
+  "fallbackResourceIds": [],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
+  "styleSettings": {},
+  "fromTemplateId": "custom-wufb-branch-health-dashboard"
+}
