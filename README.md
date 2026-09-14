@@ -102,13 +102,15 @@ regex to match your own hostname naming convention.
 
 ### 6. WUfB - KB Early Warning Dashboard
 
-Daily success/failure rate trend per KB (`UCClientUpdateStatus`), so a
-worsening quality update can be spotted in the days following its release.
-**Line chart**: one line per `TargetKBNumber` plus a flat red **Alert
-Threshold** reference line at a configurable % (`FailureThreshold`
-parameter, default 15%). A detail table below lists only the KB/Day
-combinations that exceed the threshold, ready for follow-up (pause rollout,
-open a support case). Standalone query: `kql/10-early-warning-kb-trend.kql`.
+Daily success/failure rate trend per **CU Month** (`CUMonth`, derived from
+`UpdateReleaseTime` as `yyyy-MM` — same convention as the KB Compliance
+Report workbook), so a worsening quality update can be spotted in the days
+following its release. **Line chart**: one line per `CUMonth` plus a flat red
+**Alert Threshold** reference line at a configurable % (`FailureThreshold`
+parameter, default 15%). A detail table below lists only the CU Month/Day
+combinations that exceed the threshold (with the specific `TargetKBNumber`(s)
+behind each month for traceability), ready for follow-up (pause rollout, open
+a support case). Standalone query: `kql/10-early-warning-kb-trend.kql`.
 
 ## 🚀 Deployment
 
