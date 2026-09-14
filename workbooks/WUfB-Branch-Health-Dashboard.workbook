@@ -140,7 +140,9 @@
             "nodeColorField": "ComplianceGapPercent",
             "colorAggregation": "Avg",
             "type": "heatmap",
-            "heatmapPalette": "greenRed"
+            "heatmapPalette": "greenRed",
+            "heatmapMin": 0,
+            "heatmapMax": 100
           }
         }
       },
