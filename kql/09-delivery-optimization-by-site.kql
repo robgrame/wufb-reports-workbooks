@@ -1,0 +1,22 @@
+// Delivery Optimization efficiency per sito
+// Non esiste un campo "Site/Subnet" nativo in UCDOStatus: si deduce il sito dal
+// prefisso hostname (stesso pattern usato per i filtri Modern-PC / Hostname P5:
+// MP5/WP5/KP5/TP5/MS5/WS5/KS5/TS5). Adattare la regex extract() alla propria
+// naming convention. In alternativa, per una mappatura reale di subnet/site,
+// joinare con una tabella custom (es. SiteSubnetMap) caricata nel workspace.
+UCDOStatus
+| where TimeGenerated > ago(7d)
+| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, ContentType
+| extend Site = extract(@"^([A-Za-z]{2,4}\d?)-", 1, DeviceName)
+| extend Site = iff(isempty(Site), "Unknown", Site)
+| summarize
+    Devices = dcount(AzureADDeviceId),
+    AvgBWOptPercent7Days = round(avg(BWOptPercent7Days), 1),
+    AvgBWOptPercent28Days = round(avg(BWOptPercent28Days), 1),
+    TotalBytesFromCache = sum(BytesFromCache),
+    TotalBytesFromCDN = sum(BytesFromCDN),
+    TotalBytesFromPeers = sum(BytesFromPeers)
+    by Site, Country, City
+| extend EfficiencyPercent = round(
+    100.0 * TotalBytesFromCache / (TotalBytesFromCache + TotalBytesFromCDN + 1), 1)
+| sort by Devices desc

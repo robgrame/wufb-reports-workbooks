@@ -21,7 +21,14 @@ These workbooks provide visibility into Windows Update deployment status, device
 │   ├── 05-install-timeline.kql
 │   ├── 06-state-distribution-by-category.kql
 │   ├── 07-quality-updates-with-device-info.kql
-│   └── 08-active-alerts-unified.kql
+│   ├── 08-active-alerts-unified.kql
+│   ├── 09-delivery-optimization-by-site.kql
+│   ├── 10-early-warning-kb-trend.kql
+│   ├── 11-device-health-by-model.kql
+│   ├── 12-alert-device-stopped-scanning.kql
+│   ├── 13-alert-do-efficiency-drop.kql
+│   ├── 14-alert-new-error-codes.kql
+│   └── 15-country-compliance-heatmap.kql
 ├── images/
 └── README.md
 ```
@@ -154,6 +161,31 @@ The `kql/` folder contains standalone queries you can run directly in Log Analyt
 | 4 | Blocked/problematic | Devices with OnHold, Canceled, SafeguardHold |
 | 5 | Install timeline | Average time from offer to install per KB |
 | 6 | Category distribution | State distribution per update category |
+| 7 | Quality updates + device info | Quality update status joined with device OS/deferral config |
+| 8 | Active alerts unified | `UCDeviceAlert` + `UCUpdateAlert` merged, active only |
+| 9 | Delivery Optimization by site | DO bandwidth efficiency grouped by hostname-derived site/country/city |
+| 10 | Early warning KB trend | Daily success/failure rate per KB, for spotting bad updates early |
+| 11 | Device health by model | Failed installs joined with Intune device inventory (Model/Manufacturer) |
+| 12 | Alert: device stopped scanning | Devices with `LastWUScanTime` older than 14 days |
+| 13 | Alert: DO efficiency drop | Day-over-day drop > 30% in `BWOptPercent7Days` |
+| 14 | Alert: new error codes | `ErrorCode` active on ≥ N devices in the last 24h |
+| 15 | Country compliance heatmap | Security compliance gap % by `Country`, for the workbook Map visual |
+
+## 🔍 Advanced Monitoring - Note e Limiti dello Schema
+
+Approfondimento richiesto su alcuni scenari avanzati (Delivery Optimization per
+sito, early warning, correlazione per modello, alerting custom, Power BI,
+heatmap geografica). Riepilogo di cosa è nativamente disponibile e cosa richiede
+integrazioni aggiuntive:
+
+| Scenario | Disponibile nativamente? | Note |
+|---|---|---|
+| DO efficiency per site/subnet | ⚠️ Parziale | Nessun campo `Site`/`Subnet` in `UCDOStatus`. Usare `City`/`Country` (geo da IP) o dedurre il sito dal prefisso hostname (query 9). Per subnet reali serve una mapping table esterna. |
+| Early Warning trend KB | ✅ Sì | `UCClientUpdateStatus` a serie temporale (query 10). |
+| Device Health per modello | ⚠️ Richiede join esterno | `UCClient.DeviceManufacturer`/`DeviceModel` sono documentati da Microsoft come *"currently not gathered"* (non popolati). Serve joinare con l'inventario Intune (`AzureADDeviceId`) — query 11. |
+| Alerting custom (KQL) | ✅ Sì | Implementabile con **Scheduled Query Rules** di Azure Monitor sulle query 12/13/14 (device fermo, calo DO, nuovi error code). `UCUpdateAlert.ErrorCode` è popolato; `UCDeviceAlert.ErrorCode` no. |
+| Power BI integration | ✅ Sì (esterno) | Nessun export nativo one-click. Percorsi: connector Power BI "Get Data → Azure Monitor Logs" con le stesse query KQL, oppure Diagnostic Settings verso Storage/Event Hub per storicizzazione oltre la retention di Log Analytics. |
+| Country/Branch heatmap | ✅ Sì | `UCClient.Country` è popolato; il visual **Map** dei workbook risolve nativamente per country code/nome (query 15). `City` non è popolato in `UCClient` (lo è invece in `UCDOStatus`). |
 
 ## 📖 Reference: WUfB Enumerated Types
 

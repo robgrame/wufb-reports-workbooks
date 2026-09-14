@@ -1,0 +1,18 @@
+// Alert: calo improvviso dell'efficienza Delivery Optimization
+// Confronta l'efficienza media giornaliera odierna con quella del giorno
+// precedente; segnala un calo superiore al 30%.
+UCDOStatus
+| where TimeGenerated > ago(14d)
+| summarize CurrEff = avg(BWOptPercent7Days) by Day = bin(TimeGenerated, 1d)
+| sort by Day asc
+| extend PrevEff = prev(CurrEff)
+| where isnotnull(PrevEff) and PrevEff > 0
+| extend DropPercent = round(100.0 * (PrevEff - CurrEff) / PrevEff, 1)
+| where DropPercent > 30
+| project Day, CurrEff, PrevEff, DropPercent
+| sort by Day desc
+
+// Alert rule suggerita:
+//   Measurement: Table rows
+//   Threshold: Greater than 0
+//   Evaluation frequency: 1d, Period: 2d (per avere sempre CurrEff+PrevEff)
