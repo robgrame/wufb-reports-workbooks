@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "# 🚨 WUfB - KB Early Warning Dashboard\n\nDaily **success/failure rate trend per KB**, so a worsening quality update can be spotted in the days following its release, before it becomes a widespread compliance problem.\n\n**Chart**: one line per `TargetKBNumber` (`FailureRatePercent` by `Day`), plus a flat red **Alert Threshold** reference line at a configurable %. Any KB whose line crosses above the threshold is a candidate for a rollback/pause decision.\n\n**Source**: `UCClientUpdateStatus`, filtered on `UpdateCategory == \"WindowsQualityUpdate\"`. `Failed` counts `ClientState` in `OnHold`/`Canceled` (safeguard hold, deferral, or canceled offering).\n\n> Standalone version of this query: `kql/10-early-warning-kb-trend.kql`."
+        "json": "# 🚨 WUfB - KB Early Warning Dashboard\n\nDaily **success/failure rate trend per Cumulative Update month** (`CUMonth`, derived from `UpdateReleaseTime` as `yyyy-MM` — same convention used in the **KB Compliance Report** workbook), so a worsening quality update can be spotted in the days following its release, before it becomes a widespread compliance problem.\n\n**Chart**: one line per `CUMonth` (`FailureRatePercent` by `Day`), plus a flat red **Alert Threshold** reference line at a configurable %. Any CU month whose line crosses above the threshold is a candidate for a rollback/pause decision.\n\n**Source**: `UCClientUpdateStatus`, filtered on `UpdateCategory == \"WindowsQualityUpdate\"`. `Failed` counts `ClientState` in `OnHold`/`Canceled` (safeguard hold, deferral, or canceled offering).\n\n> Standalone version of this query: `kql/10-early-warning-kb-trend.kql`."
       },
       "name": "text-header"
     },
@@ -44,13 +44,13 @@
           {
             "id": "b1a1e001-2222-4a1a-b1c1-222222222222",
             "version": "KqlParameterItem/1.0",
-            "name": "TargetKBFilter",
+            "name": "CUMonthFilter",
             "type": 2,
             "isRequired": true,
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(TargetKBNumber)\n| distinct TargetKBNumber\n| sort by TargetKBNumber desc\n| project value = TargetKBNumber, label = TargetKBNumber",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| distinct CUMonth\n| order by CUMonth desc\n| project value = CUMonth, label = CUMonth",
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::all"
@@ -60,7 +60,7 @@
             "defaultValue": "value::all",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
-            "label": "KB Number"
+            "label": "CU Month"
           },
           {
             "id": "b1a1e001-3333-4a1a-b1c1-333333333333",
@@ -82,9 +82,9 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _threshold = toreal({FailureThreshold});\nlet _kb = dynamic([{TargetKBFilter}]);\nlet _kbTrend = UCClientUpdateStatus\n    | where TimeGenerated {TimeRange}\n    | where UpdateCategory == \"WindowsQualityUpdate\"\n    | where \"*\" in (_kb) or TargetKBNumber in (_kb)\n    | summarize arg_max(TimeGenerated, ClientState) by AzureADDeviceId, TargetKBNumber, bin(TimeGenerated, 1d)\n    | summarize\n        Installed = countif(ClientState == \"Installed\"),\n        Failed = countif(ClientState in (\"OnHold\", \"Canceled\")),\n        Total = count()\n        by Day = bin(TimeGenerated, 1d), TargetKBNumber\n    | extend FailureRatePercent = round(100.0 * Failed / Total, 1)\n    | project Day, TargetKBNumber, FailureRatePercent;\nlet _days = _kbTrend | distinct Day;\nlet _thresholdLine = _days\n    | extend TargetKBNumber = \"⚠ Alert Threshold\", FailureRatePercent = _threshold\n    | project Day, TargetKBNumber, FailureRatePercent;\n_kbTrend\n| union _thresholdLine\n| sort by TargetKBNumber asc, Day asc",
+        "query": "let _threshold = toreal({FailureThreshold});\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _kbTrend = UCClientUpdateStatus\n    | where TimeGenerated {TimeRange}\n    | where UpdateCategory == \"WindowsQualityUpdate\"\n    | where isnotempty(UpdateReleaseTime)\n    | extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n    | where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n    | summarize arg_max(TimeGenerated, ClientState) by AzureADDeviceId, TargetKBNumber, CUMonth, bin(TimeGenerated, 1d)\n    | summarize\n        Installed = countif(ClientState == \"Installed\"),\n        Failed = countif(ClientState in (\"OnHold\", \"Canceled\")),\n        Total = count()\n        by Day = bin(TimeGenerated, 1d), CUMonth\n    | extend FailureRatePercent = round(100.0 * Failed / Total, 1)\n    | project Day, CUMonth, FailureRatePercent;\nlet _days = _kbTrend | distinct Day;\nlet _thresholdLine = _days\n    | extend CUMonth = \"⚠ Alert Threshold\", FailureRatePercent = _threshold\n    | project Day, CUMonth, FailureRatePercent;\n_kbTrend\n| union _thresholdLine\n| sort by CUMonth asc, Day asc",
         "size": 0,
-        "title": "Daily Failure Rate % by KB (with alert threshold)",
+        "title": "Daily Failure Rate % by CU Month (with alert threshold)",
         "timeContext": {
           "durationMs": 0
         },
@@ -97,7 +97,7 @@
           "yAxis": [
             "FailureRatePercent"
           ],
-          "group": "TargetKBNumber",
+          "group": "CUMonth",
           "createOtherGroup": 0,
           "seriesLabelSettings": [
             {
@@ -112,7 +112,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## 📋 Days Above Threshold\n\nOnly the KB/Day combinations where `FailureRatePercent` exceeds the configured threshold — the actionable early-warning list."
+        "json": "## 📋 Days Above Threshold\n\nOnly the CU Month/Day combinations where `FailureRatePercent` exceeds the configured threshold — the actionable early-warning list. The `KBs` column lists the specific `TargetKBNumber`(s) released in that CU month, for traceability."
       },
       "name": "text-detail-header"
     },
@@ -120,9 +120,9 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _threshold = toreal({FailureThreshold});\nlet _kb = dynamic([{TargetKBFilter}]);\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| summarize arg_max(TimeGenerated, ClientState) by AzureADDeviceId, TargetKBNumber, bin(TimeGenerated, 1d)\n| summarize\n    Installed = countif(ClientState == \"Installed\"),\n    Failed = countif(ClientState in (\"OnHold\", \"Canceled\")),\n    Installing = countif(ClientState == \"Installing\"),\n    Total = count()\n    by Day = bin(TimeGenerated, 1d), TargetKBNumber\n| extend\n    SuccessRatePercent = round(100.0 * Installed / Total, 1),\n    FailureRatePercent = round(100.0 * Failed / Total, 1)\n| where FailureRatePercent > _threshold\n| extend Status = \"Above Threshold\"\n| project Day, TargetKBNumber, Total, Installed, Failed, Installing, SuccessRatePercent, FailureRatePercent, Status\n| sort by Day desc, FailureRatePercent desc",
+        "query": "let _threshold = toreal({FailureThreshold});\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| summarize arg_max(TimeGenerated, ClientState) by AzureADDeviceId, TargetKBNumber, CUMonth, bin(TimeGenerated, 1d)\n| summarize\n    Installed = countif(ClientState == \"Installed\"),\n    Failed = countif(ClientState in (\"OnHold\", \"Canceled\")),\n    Installing = countif(ClientState == \"Installing\"),\n    Total = count(),\n    KBs = make_set(TargetKBNumber)\n    by Day = bin(TimeGenerated, 1d), CUMonth\n| extend\n    SuccessRatePercent = round(100.0 * Installed / Total, 1),\n    FailureRatePercent = round(100.0 * Failed / Total, 1)\n| where FailureRatePercent > _threshold\n| extend Status = \"Above Threshold\"\n| project Day, CUMonth, KBs, Total, Installed, Failed, Installing, SuccessRatePercent, FailureRatePercent, Status\n| sort by Day desc, FailureRatePercent desc",
         "size": 0,
-        "title": "KB/Day above the Failure Rate Alert Threshold",
+        "title": "CU Month/Day above the Failure Rate Alert Threshold",
         "timeContext": {
           "durationMs": 0
         },
@@ -185,7 +185,7 @@
     {
       "type": 1,
       "content": {
-        "json": "---\n### Notes\n- **Failed**: `ClientState` in `OnHold` (safeguard hold, deferral, pause) or `Canceled` (offering canceled). Not the same as a hard installation error, but it does represent devices that did not successfully complete the KB rollout.\n- **Failure Rate Alert Threshold**: adjust the `FailureThreshold` parameter (default 15%) to match your risk tolerance; it drives both the red reference line on the chart and the filtered detail table below.\n- The chart groups by `TargetKBNumber`, so a newly released KB with a rising red-crossing line is the visual early-warning signal; the table gives the exact day/KB list for follow-up (e.g., pausing the rollout via Windows Update rings, or opening a support case for a specific KB).\n- For automated proactive alerting (instead of a dashboard to check manually), see `kql/13-alert-do-efficiency-drop.kql` and `kql/14-alert-new-error-codes.kql` for the Scheduled Query Rule pattern; the same pattern can be applied to this `FailureRatePercent > threshold` condition."
+        "json": "---\n### Notes\n- **CUMonth**: derived from `UpdateReleaseTime` formatted as `yyyy-MM` (same convention as the **KB Compliance Report** workbook). Grouping by CU month instead of by single KB smooths out per-KB noise and matches how CUs are usually communicated/tracked; the `KBs` column in the detail table still shows the exact `TargetKBNumber`(s) behind each month, in case more than one KB (e.g., an out-of-band patch) was released in the same month.\n- **Failed**: `ClientState` in `OnHold` (safeguard hold, deferral, pause) or `Canceled` (offering canceled). Not the same as a hard installation error, but it does represent devices that did not successfully complete the rollout.\n- **Failure Rate Alert Threshold**: adjust the `FailureThreshold` parameter (default 15%) to match your risk tolerance; it drives both the red reference line on the chart and the filtered detail table below.\n- The chart groups by `CUMonth`, so a newly released CU with a rising red-crossing line is the visual early-warning signal; the table gives the exact day/CU month list for follow-up (e.g., pausing the rollout via Windows Update rings, or opening a support case for a specific KB).\n- For automated proactive alerting (instead of a dashboard to check manually), see `kql/13-alert-do-efficiency-drop.kql` and `kql/14-alert-new-error-codes.kql` for the Scheduled Query Rule pattern; the same pattern can be applied to this `FailureRatePercent > threshold` condition."
       },
       "name": "text-footer"
     }
