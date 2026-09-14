@@ -13,7 +13,8 @@ These workbooks provide visibility into Windows Update deployment status, device
 │   ├── WUfB-KB-Compliance-Report.workbook
 │   ├── WUfB-KB-Compliance-Report-Hostname-P5.workbook
 │   ├── WUfB-QualityUpdates-Compliance.workbook
-│   └── WUfB-Branch-Health-Dashboard.workbook
+│   ├── WUfB-Branch-Health-Dashboard.workbook
+│   └── WUfB-KB-Early-Warning-Dashboard.workbook
 ├── kql/
 │   ├── 01-device-kb-status-detail.kql
 │   ├── 02-kb-compliance-summary.kql
@@ -99,6 +100,16 @@ parsing required. A detail table with a heatmap-colored `ComplianceGapPercent`
 column is also available for numeric drill-down. Adjust the Branch extraction
 regex to match your own hostname naming convention.
 
+### 6. WUfB - KB Early Warning Dashboard
+
+Daily success/failure rate trend per KB (`UCClientUpdateStatus`), so a
+worsening quality update can be spotted in the days following its release.
+**Line chart**: one line per `TargetKBNumber` plus a flat red **Alert
+Threshold** reference line at a configurable % (`FailureThreshold`
+parameter, default 15%). A detail table below lists only the KB/Day
+combinations that exceed the threshold, ready for follow-up (pause rollout,
+open a support case). Standalone query: `kql/10-early-warning-kb-trend.kql`.
+
 ## 🚀 Deployment
 
 Published workbooks are immutable release points. Every deployment must create
@@ -176,7 +187,7 @@ The `kql/` folder contains standalone queries you can run directly in Log Analyt
 | 7 | Quality updates + device info | Quality update status joined with device OS/deferral config |
 | 8 | Active alerts unified | `UCDeviceAlert` + `UCUpdateAlert` merged, active only |
 | 9 | Delivery Optimization by site | DO bandwidth efficiency grouped by hostname-derived site/country/city |
-| 10 | Early warning KB trend | Daily success/failure rate per KB, for spotting bad updates early |
+| 10 | Early warning KB trend | Daily success/failure rate per KB, for spotting bad updates early — see **KB Early Warning Dashboard** workbook |
 | 11 | Device health by model | Failed installs joined with Intune device inventory (Model/Manufacturer) |
 | 12 | Alert: device stopped scanning | Devices with `LastWUScanTime` older than 14 days |
 | 13 | Alert: DO efficiency drop | Day-over-day drop > 30% in `BWOptPercent7Days` |
