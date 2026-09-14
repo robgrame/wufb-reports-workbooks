@@ -1,7 +1,7 @@
-// Country/Branch Heatmap - compliance per country
-// UCClient.Country e' popolato (geolocalizzazione da IP). Da usare come
-// layer "location" nel visual Map dei workbook Azure Monitor: la risoluzione
-// geografica per country code/nome e' nativa, senza bisogno di lat/long custom.
+// Country/Branch Heatmap - compliance by country
+// UCClient.Country is populated (IP-based geolocation). Use it as the
+// "location" layer in the Azure Monitor workbook Map visual: geographic
+// resolution by country code/name is native, no custom lat/long needed.
 UCClient
 | where TimeGenerated > ago(7d)
 | summarize arg_max(TimeGenerated, *) by AzureADDeviceId
@@ -14,6 +14,6 @@ UCClient
 | extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)
 | sort by ComplianceGapPercent desc
 
-// Nota: UCClient.City non e' popolato da Microsoft (documentato come
-// "currently not gathered"). Per breakdown per City/branch usare UCDOStatus
-// (City e' popolato li') o una tabella custom di mapping country/branch.
+// Note: UCClient.City is not populated by Microsoft (documented as
+// "currently not gathered"). For a City/branch breakdown use UCDOStatus
+// (City is populated there) or a custom country/branch mapping table.

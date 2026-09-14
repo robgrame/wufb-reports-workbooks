@@ -1,8 +1,8 @@
-// Alert: nuovi codici di errore comparsi su più device
-// UCUpdateAlert.ErrorCode e' popolato (a differenza di UCDeviceAlert.ErrorCode,
-// non ancora raccolto da Microsoft). Segnala codici errore attivi su almeno
-// N device distinti nelle ultime 24 ore, utile per rilevare un problema
-// sistemico (es. un bad driver o una KB con incompatibilita' diffusa).
+// Alert: new error codes appearing across multiple devices
+// UCUpdateAlert.ErrorCode is populated (unlike UCDeviceAlert.ErrorCode,
+// which Microsoft does not yet collect). Flags error codes active on at
+// least N distinct devices in the last 24 hours, useful for detecting a
+// systemic issue (e.g. a bad driver or a KB with widespread incompatibility).
 let MinDevices = 5;
 UCUpdateAlert
 | where StartTime > ago(1d)
@@ -15,7 +15,7 @@ UCUpdateAlert
 | where Devices >= MinDevices
 | sort by Devices desc
 
-// Alert rule suggerita:
+// Suggested alert rule:
 //   Measurement: Table rows
 //   Threshold: Greater than 0
 //   Evaluation frequency: 1h, Period: 1d

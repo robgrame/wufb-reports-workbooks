@@ -1,9 +1,8 @@
-// Delivery Optimization efficiency per sito
-// Non esiste un campo "Site/Subnet" nativo in UCDOStatus: si deduce il sito dal
-// prefisso hostname (stesso pattern usato per i filtri Modern-PC / Hostname P5:
-// MP5/WP5/KP5/TP5/MS5/WS5/KS5/TS5). Adattare la regex extract() alla propria
-// naming convention. In alternativa, per una mappatura reale di subnet/site,
-// joinare con una tabella custom (es. SiteSubnetMap) caricata nel workspace.
+// Delivery Optimization efficiency by site
+// UCDOStatus has no native "Site/Subnet" field. The site is derived from the
+// hostname prefix (adjust the extract() regex to match your own naming
+// convention). For a real subnet/site mapping, join with a custom table
+// (e.g. SiteSubnetMap) loaded into the workspace instead.
 UCDOStatus
 | where TimeGenerated > ago(7d)
 | summarize arg_max(TimeGenerated, *) by AzureADDeviceId, ContentType

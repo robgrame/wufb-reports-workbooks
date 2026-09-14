@@ -90,14 +90,13 @@ percentage of the entire managed fleet.
 
 ### 5. WUfB - Branch/Country Health Dashboard
 
-Security compliance gap per **Branch/Sede** (dedotto dal prefisso hostname del
-`DeviceName`, stessa convenzione MP5/WP5/... usata per il filtro Modern-PC) e
-per `Country`, mostrato come **grafico a barre ordinato per severità**
-(🟢 OK / 🟡 Warning / 🔴 Critical) invece di una tabella o mappa geografica: più
-leggibile quando i siti sono pochi o concentrati in un unico Paese. Una tabella
-di dettaglio con heatmap colorata (`ComplianceGapPercent`) resta disponibile
-per il drill-down numerico. Adattare la regex di estrazione del Branch alla
-propria naming convention se diversa da quella usata negli altri workbook.
+Security compliance gap per **Branch/Site** (derived from the `DeviceName`
+hostname prefix) and per `Country`, rendered as a **bar chart sorted by
+severity** (🟢 OK / 🟡 Warning / 🔴 Critical) instead of a table or geographic
+map: easier to read when sites are few or concentrated in a single country. A
+detail table with a heatmap-colored `ComplianceGapPercent` column is also
+available for numeric drill-down. Adjust the Branch extraction regex to match
+your own hostname naming convention.
 
 ## 🚀 Deployment
 
@@ -183,21 +182,21 @@ The `kql/` folder contains standalone queries you can run directly in Log Analyt
 | 14 | Alert: new error codes | `ErrorCode` active on ≥ N devices in the last 24h |
 | 15 | Country compliance heatmap | Security compliance gap % by `Country`, for the workbook Map visual |
 
-## 🔍 Advanced Monitoring - Note e Limiti dello Schema
+## 🔍 Advanced Monitoring - Schema Notes and Limitations
 
-Approfondimento richiesto su alcuni scenari avanzati (Delivery Optimization per
-sito, early warning, correlazione per modello, alerting custom, Power BI,
-heatmap geografica). Riepilogo di cosa è nativamente disponibile e cosa richiede
-integrazioni aggiuntive:
+Deep-dive requested on a few advanced scenarios (Delivery Optimization by
+site, early warning, model correlation, custom alerting, Power BI, geographic
+heatmap). Summary of what's natively available versus what requires
+additional integrations:
 
-| Scenario | Disponibile nativamente? | Note |
+| Scenario | Natively available? | Notes |
 |---|---|---|
-| DO efficiency per site/subnet | ⚠️ Parziale | Nessun campo `Site`/`Subnet` in `UCDOStatus`. Usare `City`/`Country` (geo da IP) o dedurre il sito dal prefisso hostname (query 9). Per subnet reali serve una mapping table esterna. |
-| Early Warning trend KB | ✅ Sì | `UCClientUpdateStatus` a serie temporale (query 10). |
-| Device Health per modello | ⚠️ Richiede join esterno | `UCClient.DeviceManufacturer`/`DeviceModel` sono documentati da Microsoft come *"currently not gathered"* (non popolati). Serve joinare con l'inventario Intune (`AzureADDeviceId`) — query 11. |
-| Alerting custom (KQL) | ✅ Sì | Implementabile con **Scheduled Query Rules** di Azure Monitor sulle query 12/13/14 (device fermo, calo DO, nuovi error code). `UCUpdateAlert.ErrorCode` è popolato; `UCDeviceAlert.ErrorCode` no. |
-| Power BI integration | ✅ Sì (esterno) | Nessun export nativo one-click. Percorsi: connector Power BI "Get Data → Azure Monitor Logs" con le stesse query KQL, oppure Diagnostic Settings verso Storage/Event Hub per storicizzazione oltre la retention di Log Analytics. |
-| Country/Branch heatmap | ✅ Sì | `UCClient.Country` è popolato; il visual **Map** dei workbook risolve nativamente per country code/nome (query 15). `City` non è popolato in `UCClient` (lo è invece in `UCDOStatus`). |
+| DO efficiency by site/subnet | ⚠️ Partial | No `Site`/`Subnet` field in `UCDOStatus`. Use `City`/`Country` (IP-based geo) or derive the site from the hostname prefix (query 9). Real subnets require an external mapping table. |
+| Early Warning KB trend | ✅ Yes | `UCClientUpdateStatus` as a time series (query 10). |
+| Device Health by model | ⚠️ Requires external join | `UCClient.DeviceManufacturer`/`DeviceModel` are documented by Microsoft as *"currently not gathered"* (not populated). Requires joining with the Intune inventory (`AzureADDeviceId`) — query 11. |
+| Custom alerting (KQL) | ✅ Yes | Implementable with Azure Monitor **Scheduled Query Rules** on queries 12/13/14 (stalled device, DO drop, new error codes). `UCUpdateAlert.ErrorCode` is populated; `UCDeviceAlert.ErrorCode` is not. |
+| Power BI integration | ✅ Yes (external) | No native one-click export. Paths: Power BI "Get Data → Azure Monitor Logs" connector with the same KQL queries, or Diagnostic Settings to Storage/Event Hub for retention beyond Log Analytics. |
+| Country/Branch heatmap | ✅ Yes | `UCClient.Country` is populated; the workbook **Map** visual natively resolves country code/name (query 15). `City` is not populated in `UCClient` (it is in `UCDOStatus`). |
 
 ## 📖 Reference: WUfB Enumerated Types
 
