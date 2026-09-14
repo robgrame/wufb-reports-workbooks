@@ -91,12 +91,13 @@ percentage of the entire managed fleet.
 ### 5. WUfB - Branch/Country Health Dashboard
 
 Security compliance gap per **Branch/Site** (derived from the `DeviceName`
-hostname prefix) and per `Country`, rendered as a **bar chart sorted by
-severity** (🟢 OK / 🟡 Warning / 🔴 Critical) instead of a table or geographic
-map: easier to read when sites are few or concentrated in a single country. A
-detail table with a heatmap-colored `ComplianceGapPercent` column is also
-available for numeric drill-down. Adjust the Branch extraction regex to match
-your own hostname naming convention.
+hostname prefix) and per `Country`, combining a **bar chart sorted by
+severity** (🟢 OK / 🟡 Warning / 🔴 Critical) — best for ranking many
+sites/branches — with a **geographic map** colored by compliance gap %
+(bubble size = device count) using the native `Country` field, no hostname
+parsing required. A detail table with a heatmap-colored `ComplianceGapPercent`
+column is also available for numeric drill-down. Adjust the Branch extraction
+regex to match your own hostname naming convention.
 
 ## 🚀 Deployment
 
