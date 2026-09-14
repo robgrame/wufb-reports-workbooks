@@ -1,6 +1,6 @@
-// Alert: device che hanno smesso di scansionare Windows Update
-// Da usare in una Scheduled Query Rule (Azure Monitor Alerts).
-// Soglia consigliata: risultato > 0 -> Sev 2/3, action group email/Teams.
+// Alert: devices that stopped scanning for Windows Update
+// Use this in a Scheduled Query Rule (Azure Monitor Alerts).
+// Suggested threshold: result count > 0 -> Sev 2/3, action group email/Teams.
 UCClient
 | summarize arg_max(TimeGenerated, LastWUScanTime) by AzureADDeviceId, DeviceName
 | extend DaysSinceLastScan = datetime_diff('day', now(), LastWUScanTime)
@@ -8,7 +8,7 @@ UCClient
 | project DeviceName, AzureADDeviceId, LastWUScanTime, DaysSinceLastScan
 | sort by DaysSinceLastScan desc
 
-// Alert rule suggerita:
+// Suggested alert rule:
 //   Measurement: Table rows
 //   Threshold: Greater than 0
 //   Evaluation frequency: 1d, Period: 1d

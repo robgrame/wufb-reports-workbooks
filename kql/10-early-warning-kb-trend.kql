@@ -1,6 +1,6 @@
-// Early Warning Dashboard - trend giornaliero successi/fallimenti per KB
-// Utile per rilevare un peggioramento del failure rate su una KB specifica
-// nei giorni successivi al rilascio (early warning su bad update).
+// Early Warning Dashboard - daily success/failure trend per KB
+// Useful for spotting a worsening failure rate on a specific KB in the days
+// following its release (early warning on a bad update).
 UCClientUpdateStatus
 | where TimeGenerated > ago(30d)
 | where UpdateCategory == "WindowsQualityUpdate"
@@ -16,5 +16,6 @@ UCClientUpdateStatus
     FailureRatePercent = round(100.0 * Failed / Total, 1)
 | sort by TargetKBNumber desc, Day asc
 
-// Suggerimento workbook: grafico a linee (Day su asse X, FailureRatePercent su Y,
-// serie per TargetKBNumber) con soglia condizionale rossa oltre una % configurabile.
+// Workbook suggestion: line chart (Day on X axis, FailureRatePercent on Y,
+// one series per TargetKBNumber) with a conditional red threshold above a
+// configurable %.

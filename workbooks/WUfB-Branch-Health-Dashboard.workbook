@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "# 🌍 WUfB - Branch/Country Health Dashboard\n\nQuesto workbook mostra il **compliance gap di sicurezza** (device non aggiornati all'ultima security update) raggruppato per **Branch/Sede** e **Country**, in forma di **grafico a barre ordinato** invece di una semplice tabella o mappa geografica.\n\n**Perché un grafico a barre invece di una mappa geografica:**\n- Una mappa mondo è utile solo quando i siti sono distribuiti su molti Paesi diversi; con poche country o con più sedi nello stesso Paese, il grafico a barre ordinato per gap di compliance è molto più leggibile a colpo d'occhio (ranking immediato dei siti peggiori).\n- Il colore delle barre segue una soglia di severità (🟢 OK / 🟡 Warning / 🔴 Critical) invece di un gradiente continuo, più facile da interpretare rispetto a un heatmap a gradiente.\n\n**Sorgente**: `UCClient` (filtro `OSSecurityUpdateStatus`).\n\n> **Branch** è dedotto dal prefisso del `DeviceName` (stessa convenzione hostname usata per il filtro Modern-PC, es. `MP5-`, `WP5-`, ecc.). Se la vostra naming convention è diversa, adattare la regex nella query (`extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)`). In assenza di un prefisso riconoscibile, il device viene raggruppato come `Unknown (Country)`.\n\n> **Filtro Tipo PC:** di default vengono mostrati solo i **PC Modern** (Windows 11; esclusi i Windows 10). Imposta *Tipo PC = Tutti i PC* per includere anche i Windows 10."
+        "json": "# 🌍 WUfB - Branch/Country Health Dashboard\n\nThis workbook shows the **security compliance gap** (devices not on the latest security update) grouped by **Branch/Site** and **Country**, rendered as a **sorted bar chart** instead of a plain table or a geographic map.\n\n**Why a bar chart instead of a geographic map:**\n- A world map is only useful when sites are spread across many different countries; with few countries, or multiple sites within the same country, a bar chart sorted by compliance gap is much easier to read at a glance (immediate ranking of the worst sites).\n- Bar color follows a severity threshold (🟢 OK / 🟡 Warning / 🔴 Critical) instead of a continuous gradient, which is easier to interpret than a gradient heatmap.\n\n**Source**: `UCClient` (filtered on `OSSecurityUpdateStatus`).\n\n> **Branch** is derived from the `DeviceName` hostname prefix. Adjust the regex in the query (`extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)`) to match your own naming convention. If no recognizable prefix is found, the device is grouped as `Unknown (Country)`."
       },
       "name": "text-header"
     },
@@ -39,21 +39,7 @@
             "value": {
               "durationMs": 604800000
             },
-            "label": "Intervallo Temporale"
-          },
-          {
-            "id": "e3a3f001-2222-4a1a-b1c1-222222222222",
-            "version": "KqlParameterItem/1.0",
-            "name": "ModernOnly",
-            "type": 2,
-            "isRequired": true,
-            "query": "datatable(value:string, label:string, selected:bool)\n[\n  'modern', 'Solo PC Modern (esclude Windows 10)', true,\n  'all', 'Tutti i PC', false\n]",
-            "typeSettings": {
-              "additionalResourceOptions": []
-            },
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "label": "Tipo PC"
+            "label": "Time Range"
           },
           {
             "id": "e3a3f001-3333-4a1a-b1c1-333333333333",
@@ -74,7 +60,7 @@
             "defaultValue": "value::all",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
-            "label": "Severità"
+            "label": "Severity"
           }
         ],
         "style": "pills",
@@ -87,9 +73,9 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _modernOnly = \"{ModernOnly}\";\nlet _severity = dynamic([{SeverityFilter}]);\nUCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| where _modernOnly == \"all\" or isempty(OSVersion) or not(OSVersion startswith \"Windows 10\")\n| extend Branch = extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)\n| extend Branch = iff(isempty(Branch), strcat(\"Unknown (\", coalesce(Country, \"N/D\"), \")\"), Branch)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    NotLatestSecurity = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    MultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")\n    by Branch, Country\n| extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)\n| extend Severity = case(\n    ComplianceGapPercent >= 30, \"Critical\",\n    ComplianceGapPercent >= 10, \"Warning\",\n    \"OK\")\n| where \"*\" in (_severity) or Severity in (_severity)\n| project Branch, Country, Devices, NotLatestSecurity, MultipleMissing, ComplianceGapPercent, Severity\n| sort by ComplianceGapPercent desc",
+        "query": "let _severity = dynamic([{SeverityFilter}]);\nUCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| extend Branch = extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)\n| extend Branch = iff(isempty(Branch), strcat(\"Unknown (\", coalesce(Country, \"N/A\"), \")\"), Branch)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    NotLatestSecurity = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    MultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")\n    by Branch, Country\n| extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)\n| extend Severity = case(\n    ComplianceGapPercent >= 30, \"Critical\",\n    ComplianceGapPercent >= 10, \"Warning\",\n    \"OK\")\n| where \"*\" in (_severity) or Severity in (_severity)\n| project Branch, Country, Devices, NotLatestSecurity, MultipleMissing, ComplianceGapPercent, Severity\n| sort by ComplianceGapPercent desc",
         "size": 0,
-        "title": "Compliance Gap per Branch/Sede (ordinato dal peggiore)",
+        "title": "Compliance Gap by Branch/Site (sorted worst first)",
         "timeContext": {
           "durationMs": 0
         },
@@ -125,7 +111,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## 📋 Dettaglio per Branch/Sede\n\nTabella di supporto con heatmap colorata sulla colonna `ComplianceGapPercent`, per il drill-down numerico dietro al grafico."
+        "json": "## 📋 Detail by Branch/Site\n\nSupporting table with a heatmap-colored `ComplianceGapPercent` column, for numeric drill-down behind the chart."
       },
       "name": "text-detail-header"
     },
@@ -133,9 +119,9 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _modernOnly = \"{ModernOnly}\";\nlet _severity = dynamic([{SeverityFilter}]);\nUCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| where _modernOnly == \"all\" or isempty(OSVersion) or not(OSVersion startswith \"Windows 10\")\n| extend Branch = extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)\n| extend Branch = iff(isempty(Branch), strcat(\"Unknown (\", coalesce(Country, \"N/D\"), \")\"), Branch)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    NotLatestSecurity = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    MultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")\n    by Branch, Country\n| extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)\n| extend Severity = case(\n    ComplianceGapPercent >= 30, \"Critical\",\n    ComplianceGapPercent >= 10, \"Warning\",\n    \"OK\")\n| where \"*\" in (_severity) or Severity in (_severity)\n| project Branch, Country, Devices, NotLatestSecurity, MultipleMissing, ComplianceGapPercent, Severity\n| sort by ComplianceGapPercent desc",
+        "query": "let _severity = dynamic([{SeverityFilter}]);\nUCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| extend Branch = extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)\n| extend Branch = iff(isempty(Branch), strcat(\"Unknown (\", coalesce(Country, \"N/A\"), \")\"), Branch)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    NotLatestSecurity = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    MultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")\n    by Branch, Country\n| extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)\n| extend Severity = case(\n    ComplianceGapPercent >= 30, \"Critical\",\n    ComplianceGapPercent >= 10, \"Warning\",\n    \"OK\")\n| where \"*\" in (_severity) or Severity in (_severity)\n| project Branch, Country, Devices, NotLatestSecurity, MultipleMissing, ComplianceGapPercent, Severity\n| sort by ComplianceGapPercent desc",
         "size": 0,
-        "title": "Dettaglio Compliance Gap per Branch/Sede",
+        "title": "Compliance Gap Detail by Branch/Site",
         "timeContext": {
           "durationMs": 0
         },
@@ -208,7 +194,7 @@
     {
       "type": 1,
       "content": {
-        "json": "---\n### Note\n- **Severity bucket**: Critical (gap ≥ 30%), Warning (gap ≥ 10% e < 30%), OK (gap < 10%). Soglie modificabili direttamente nella query (`case(...)`).\n- Il grafico a barre raggruppa per `Severity` in modo che il colore sia immediato senza dover leggere i numeri; la tabella sotto fornisce il dettaglio numerico e resta ordinabile/filtrabile.\n- Per una vista puramente geografica (mappa mondo), la stessa query raggruppata solo per `Country` può essere riutilizzata con `visualization: \"map\"` — vedi `kql/15-country-compliance-heatmap.kql`."
+        "json": "---\n### Notes\n- **Severity bucket**: Critical (gap ≥ 30%), Warning (gap ≥ 10% and < 30%), OK (gap < 10%). Thresholds can be changed directly in the query (`case(...)`).\n- The bar chart groups by `Severity` so color is immediately readable without reading the numbers; the table below provides numeric detail and stays sortable/filterable.\n- For a purely geographic view (world map), the same query grouped only by `Country` can be reused with `visualization: \"map\"` — see `kql/15-country-compliance-heatmap.kql`."
       },
       "name": "text-footer"
     }

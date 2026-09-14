@@ -1,12 +1,12 @@
-// Device Health Correlation - fallimenti update per modello hardware
-// ATTENZIONE: UCClient.DeviceManufacturer e UCClient.DeviceModel sono
-// documentati da Microsoft come "currently not gathered" (non popolati) nello
-// schema WUfB Reports. Per correlare i fallimenti al modello device è
-// necessario joinare con l'inventario Intune (tabella custom/esportata via
-// Graph "managedDevices", es. IntuneDevices) su AzureADDeviceId.
-// Se la tabella IntuneDevices non esiste nel workspace, va creata tramite
-// Diagnostic Export di Intune o un connector custom (Logic App/Function che
-// scrive i dati di Graph in una tabella custom Log Analytics).
+// Device Health Correlation - update failures by hardware model
+// NOTE: UCClient.DeviceManufacturer and UCClient.DeviceModel are documented
+// by Microsoft as "currently not gathered" (not populated) in the WUfB
+// Reports schema. To correlate failures with the device model you need to
+// join with the Intune device inventory (custom table exported via Graph
+// "managedDevices", e.g. IntuneDevices) on AzureADDeviceId.
+// If the IntuneDevices table does not exist in the workspace, it must be
+// created via an Intune diagnostic export or a custom connector (Logic
+// App/Function that writes Graph data into a custom Log Analytics table).
 UCClientUpdateStatus
 | where TimeGenerated > ago(30d)
 | where ClientState in ("OnHold", "Canceled", "Unknown")
