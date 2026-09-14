@@ -40,6 +40,16 @@
               "durationMs": 604800000
             },
             "label": "Time Range (applies to all tabs)"
+          },
+          {
+            "id": "a0a0a001-0000-4a1a-b1c1-000000000002",
+            "version": "KqlParameterItem/1.0",
+            "name": "Tab",
+            "type": 1,
+            "isRequired": true,
+            "value": "DOSite",
+            "isHiddenWhenLocked": true,
+            "label": "Active tab (internal)"
           }
         ],
         "style": "pills",
