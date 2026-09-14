@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "# 🌍 WUfB - Branch/Country Health Dashboard\n\nThis workbook shows the **security compliance gap** (devices not on the latest security update) grouped by **Branch/Site** and **Country**, rendered as a **sorted bar chart** instead of a plain table or a geographic map.\n\n**Why a bar chart instead of a geographic map:**\n- A world map is only useful when sites are spread across many different countries; with few countries, or multiple sites within the same country, a bar chart sorted by compliance gap is much easier to read at a glance (immediate ranking of the worst sites).\n- Bar color follows a severity threshold (🟢 OK / 🟡 Warning / 🔴 Critical) instead of a continuous gradient, which is easier to interpret than a gradient heatmap.\n\n**Source**: `UCClient` (filtered on `OSSecurityUpdateStatus`).\n\n> **Branch** is derived from the `DeviceName` hostname prefix. Adjust the regex in the query (`extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)`) to match your own naming convention. If no recognizable prefix is found, the device is grouped as `Unknown (Country)`."
+        "json": "# 🌍 WUfB - Branch/Country Health Dashboard\n\nThis workbook shows the **security compliance gap** (devices not on the latest security update) grouped by **Branch/Site** and by **Country**, combining a **sorted bar chart** (best for ranking many sites/branches) with a **geographic map** (best for a quick country-level view, since `Country` is a field natively populated by WUfB Reports).\n\n**Bar chart (by Branch/Site):**\n- Useful when you have many sites, including several within the same country; sorted by compliance gap it gives an immediate ranking of the worst sites.\n- Bar color follows a severity threshold (🟢 OK / 🟡 Warning / 🔴 Critical) instead of a continuous gradient, which is easier to interpret at a glance.\n\n**Map (by Country):**\n- Bubble size = device count, bubble color = compliance gap % (green → red heatmap). Good for an at-a-glance geographic overview when devices span multiple countries.\n\n**Source**: `UCClient` (filtered on `OSSecurityUpdateStatus`).\n\n> **Branch** (bar chart only) is derived from the `DeviceName` hostname prefix. Adjust the regex in the query (`extract(@\"^([A-Za-z]{2,4}\\d?)-\", 1, DeviceName)`) to match your own naming convention. If no recognizable prefix is found, the device is grouped as `Unknown (Country)`. The map instead groups directly by the native `Country` field, no hostname parsing needed."
       },
       "name": "text-header"
     },
@@ -111,6 +111,44 @@
     {
       "type": 1,
       "content": {
+        "json": "## 🗺️ Compliance Gap by Country\n\nGeographic heatmap using the `Country` field, which **is natively populated** by WUfB Reports on `UCClient` (unlike `Site`/`Subnet`, which do not exist in the schema). Bubble size = device count, bubble color = compliance gap % (green → red)."
+      },
+      "name": "text-map-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let _severity = dynamic([{SeverityFilter}]);\nUCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| where isnotempty(Country)\n| summarize\n    Devices = dcount(AzureADDeviceId),\n    NotLatestSecurity = countif(OSSecurityUpdateStatus == \"NotLatest\"),\n    MultipleMissing = countif(OSSecurityUpdateStatus == \"MultipleSecurityUpdatesMissing\")\n    by Country\n| extend ComplianceGapPercent = round(100.0 * (NotLatestSecurity + MultipleMissing) / Devices, 1)\n| extend Severity = case(\n    ComplianceGapPercent >= 30, \"Critical\",\n    ComplianceGapPercent >= 10, \"Warning\",\n    \"OK\")\n| where \"*\" in (_severity) or Severity in (_severity)\n| project Country, Devices, ComplianceGapPercent, Severity\n| sort by ComplianceGapPercent desc",
+        "size": 0,
+        "title": "Compliance Gap by Country (map)",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "map",
+        "mapSettings": {
+          "locInfo": "CountryRegion",
+          "locInfoColumn": "Country",
+          "sizeSettings": "Devices",
+          "sizeAggregation": "Sum",
+          "legendMetric": "ComplianceGapPercent",
+          "legendAggregation": "Avg",
+          "itemColorSettings": {
+            "nodeColorField": "ComplianceGapPercent",
+            "colorAggregation": "Avg",
+            "type": "heatmap",
+            "heatmapPalette": "greenRed"
+          }
+        }
+      },
+      "name": "map-country-compliance-gap"
+    },
+    {
+      "type": 1,
+      "content": {
         "json": "## 📋 Detail by Branch/Site\n\nSupporting table with a heatmap-colored `ComplianceGapPercent` column, for numeric drill-down behind the chart."
       },
       "name": "text-detail-header"
@@ -194,7 +232,7 @@
     {
       "type": 1,
       "content": {
-        "json": "---\n### Notes\n- **Severity bucket**: Critical (gap ≥ 30%), Warning (gap ≥ 10% and < 30%), OK (gap < 10%). Thresholds can be changed directly in the query (`case(...)`).\n- The bar chart groups by `Severity` so color is immediately readable without reading the numbers; the table below provides numeric detail and stays sortable/filterable.\n- For a purely geographic view (world map), the same query grouped only by `Country` can be reused with `visualization: \"map\"` — see `kql/15-country-compliance-heatmap.kql`."
+        "json": "---\n### Notes\n- **Severity bucket**: Critical (gap ≥ 30%), Warning (gap ≥ 10% and < 30%), OK (gap < 10%). Thresholds can be changed directly in the query (`case(...)`).\n- The bar chart groups by `Severity` so color is immediately readable without reading the numbers; the table below provides numeric detail and stays sortable/filterable.\n- The map uses the native `Country` field (populated by WUfB Reports on `UCClient`) with `locInfo: CountryRegion`; no hostname parsing or external lookup is required. See also `kql/15-country-compliance-heatmap.kql` for the standalone version of this query."
       },
       "name": "text-footer"
     }
