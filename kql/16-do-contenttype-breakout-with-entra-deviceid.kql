@@ -1,0 +1,46 @@
+// DO ContentType breakout - with Entra (Azure AD) Device ID
+//
+// This is a customization of the drill-through report that opens when
+// clicking a content type (e.g. "Intune Apps") in the built-in/standard
+// "Content Distribution" workbook's donut/bar chart. That native report is
+// named "DO ContentType breakout" and is NOT part of this repository (it
+// ships with the standard Delivery Optimization content-distribution
+// workbook template) - this file only documents the customized query so it
+// can be reapplied whenever the built-in report is duplicated/edited.
+//
+// Change vs. the original report: added AzureADDeviceId to the project, so
+// each row can be uniquely tied to the Entra device object (useful to pivot
+// into Intune/Entra device details, e.g. via the RemoteLaps/Intune tooling).
+//
+// Parameters (unchanged, inherited from the parent Content Distribution
+// workbook when this report is opened as a drill-through):
+//   {ContentType}       - the content type clicked in the parent chart
+//   {DOSnapshotTime}    - the snapshot TimeGenerated selected in the parent report
+//   {GroupID}           - DO Group ID filter, or "ALL"
+//   {AzureADTenantId}   - Entra tenant filter, or "ALL"
+
+let ContentTypeParam = "{ContentType}";
+let _SnapshotTime = datetime({DOSnapshotTime});
+let GroupIDSelected = "{GroupID}";
+let AzureADTenantIdSelected = "{AzureADTenantId}";
+
+UCDOStatus
+| where TimeGenerated == _SnapshotTime
+| where ContentType == ContentTypeParam
+| extend FilterGroupID = iff(isempty(GroupID), 'None', GroupID)
+| where iff(GroupIDSelected has "ALL", true, GroupIDSelected has tostring(FilterGroupID))
+| where iff(AzureADTenantIdSelected has "ALL", true, AzureADTenantIdSelected has tostring(AzureADTenantId))
+| project AzureADTenantId, ContentType, DeviceName, AzureADDeviceId, GlobalDeviceId, GroupID, BytesFromCDN, BytesFromPeers, BytesFromGroupPeers, BytesFromCache
+
+// How to apply this change in the native workbook:
+//   1. Open the "Content Distribution" workbook -> Edit mode.
+//   2. Click a content type slice to jump into the "DO ContentType breakout"
+//      report (or open it directly if it's a separate linked workbook).
+//   3. Edit mode on that report's query -> Advanced Editor / query editor ->
+//      replace the "project" line with the one above (adds AzureADDeviceId).
+//   4. Add a "Entra Device ID" column header/formatter for AzureADDeviceId if
+//      the grid has custom column settings (rename headers, add sort, etc.).
+//   5. Save AS a NEW workbook version (do not overwrite the standard
+//      Microsoft template) so the customization survives future template
+//      updates. See README "Deployment" section for the immutable-version
+//      convention used across this repo.

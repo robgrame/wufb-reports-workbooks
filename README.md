@@ -31,7 +31,8 @@ These workbooks provide visibility into Windows Update deployment status, device
 │   ├── 12-alert-device-stopped-scanning.kql
 │   ├── 13-alert-do-efficiency-drop.kql
 │   ├── 14-alert-new-error-codes.kql
-│   └── 15-country-compliance-heatmap.kql
+│   ├── 15-country-compliance-heatmap.kql
+│   └── 16-do-contenttype-breakout-with-entra-deviceid.kql
 ├── images/
 └── README.md
 ```
@@ -214,6 +215,7 @@ The `kql/` folder contains standalone queries you can run directly in Log Analyt
 | 13 | Alert: DO efficiency drop | Day-over-day drop > 30% in `BWOptPercent7Days` |
 | 14 | Alert: new error codes | `ErrorCode` active on ≥ N devices in the last 24h |
 | 15 | Country compliance heatmap | Security compliance gap % by `Country`, for the workbook Map visual |
+| 16 | DO ContentType breakout (Entra Device ID) | Customized drill-through query for the native "Content Distribution" workbook's "DO ContentType breakout" report, adding `AzureADDeviceId` to the projection |
 
 ## 🔍 Advanced Monitoring - Schema Notes and Limitations
 
