@@ -81,6 +81,18 @@ Client, service, and alert records are correlated using `AzureADDeviceId` and
 the driver-specific `UpdateId`. Service or alert records without `UpdateId`
 are intentionally not correlated.
 
+**v3 change:** removed the `UpdateManufacturer`, `DeviceManufacturer` and
+`DeviceModel` columns/filters from all panels. `DeviceManufacturer`/
+`DeviceModel` are not reliably populated in `UCClient` on every workspace —
+device make/model should instead be sourced from `IntuneDevices` — and no
+reliable data was found for `UpdateManufacturer`.
+
+**v4 change:** the **Tipo PC = Solo PC Modern** filter (enabled by default,
+same as the KB Compliance Report) now requires *both* conditions:
+`OSVersion` starting with `Windows 11` *and* hostname starting with `MP5`,
+`WP5`, `KP5`, `TP5`, `MS5`, `WS5`, `KS5` or `TS5`. Previously it only
+excluded Windows 10 devices.
+
 ### 4. WUfB - KB Compliance Report
 
 Quality-update compliance by KB, with CU month, OS, client-state, and device
