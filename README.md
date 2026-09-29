@@ -84,8 +84,12 @@ are intentionally not correlated.
 ### 4. WUfB - KB Compliance Report
 
 Quality-update compliance by KB, with CU month, OS, client-state, and device
-filters. The Hostname P5 variant applies the additional MP5/WP5/KP5/TP5/MS5/
-WS5/KS5/TS5 hostname prefixes.
+filters. The **Tipo PC = Solo PC Modern** filter (enabled by default) now
+requires *both* conditions: `OSVersion` starting with `Windows 11` *and*
+hostname starting with `MP5`, `WP5`, `KP5`, `TP5`, `MS5`, `WS5`, `KS5` or
+`TS5`. The Hostname P5 variant additionally applies an unconditional
+MP5/WP5/KP5/TP5/MS5/WS5/KS5/TS5 hostname filter regardless of the Tipo PC
+toggle.
 
 Compliance percentages named `PercentInstalledReported` use only devices that
 reported a status for the selected update. They must not be interpreted as the
@@ -268,7 +272,7 @@ additional integrations:
 - **Righe "vuote" nel Service-Side report** → ora la colonna `Note` riporta esplicitamente `AwaitingRestart` quando il device sta solo aspettando il riavvio, `OK - Installed`, `Offered, not yet started`, ecc.
 - **Mismatch device tra report Compliance e Service-Side** → ridotto: il Service-Side ora elenca *tutti* i device del report precedente, indipendentemente dalla presenza di record in `UCServiceUpdateStatus` o `UCUpdateAlert`.
 - **`-1` nelle colonne `WU*DeferralDays / DeadlineDays / GracePeriodDays`** → valore sentinel di Windows; nel workbook viene renderizzato come `NotConfigured`.
-- **Filtro `Tipo PC` (Modern)** → tutti i report sono filtrati di default sui soli **PC Modern** (Windows 11). I device **Windows 10** vengono esclusi automaticamente (predicato `not(OSVersion startswith "Windows 10")`, che mantiene anche i device con `OSVersion` non popolata). Per includerli, impostare *Tipo PC = Tutti i PC*.
+- **Filtro `Tipo PC` (Modern)** → tutti i report sono filtrati di default sui soli **PC Modern**. Un device è considerato PC Modern solo se `OSVersion` inizia con `Windows 11` **e** l'hostname (`DeviceName`) inizia con uno dei prefissi `MP5`, `WP5`, `KP5`, `TP5`, `MS5`, `WS5`, `KS5`, `TS5` (predicato `OSVersion startswith "Windows 11" and (DeviceName startswith "MP5" or ...)`). Tutti gli altri device (Windows 10, o Windows 11 con hostname fuori da questi prefissi) vengono esclusi. Per includerli, impostare *Tipo PC = Tutti i PC*.
 - **Report Service-Side e Alert (KB Compliance) e cumulative** → la join service/alert è in *leftouter* su `AzureADDeviceId` + `TargetBuild`: con *CU Month = All* vengono mostrate **tutte le cumulative**, non solo l'ultima.
 - **Report "Configurazione Update Ring" rimosso** dal workbook *KB Compliance Report*: i dati di deferral risultavano non disponibili (`-1`/vuoti) e il nome device spesso assente.
 
