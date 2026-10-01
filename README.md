@@ -114,6 +114,18 @@ workbook parameter strip. They are declared in a dedicated parameter block
 immediately inside the **Stato Client e Alert per Device** section and continue
 to affect only that table.
 
+**v8 change:** every Driver Compliance view now has its own local filter block,
+using only fields relevant to that table. The report-wide toolbar retains only
+**Intervallo Temporale** and **Tipo PC**. Local controls cover driver/device
+names, update classification, client and service states/substates, alert
+status/classification/subtype, deployment/policy, error code or symbol, and
+OS version where those values are available. The summary and inventory tables
+also expose `UpdateClassification` as a result column. State/substate filters
+are intentionally omitted from the compliance summary so they cannot distort
+the denominator of `PercentInstalledReported`. The inventory continues to
+count devices that reported an installation within the selected time range,
+rather than silently changing to a latest-state-only interpretation.
+
 ### 4. WUfB - KB Compliance Report
 
 Quality-update compliance by KB, with CU month, OS, client-state, and device
