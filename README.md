@@ -93,6 +93,15 @@ same as the KB Compliance Report) now requires *both* conditions:
 `WP5`, `KP5`, `TP5`, `MS5`, `WS5`, `KS5` or `TS5`. Previously it only
 excluded Windows 10 devices.
 
+**v5 change:** added a driver-name text filter alongside the existing
+ClientState and PC-name filters. The **Stato Installazione per Device +
+Driver** table now joins the latest `UCUpdateAlert` record by
+`AzureADDeviceId + UpdateId` and exposes alert subtype, classification,
+Active/Resolved status, error code/symbol, recommendation, documentation URL,
+alert type, and alert timestamp. It shows one most-relevant latest alert per
+device and driver; the dedicated error table remains the complete view of all
+active alert subtypes.
+
 ### 4. WUfB - KB Compliance Report
 
 Quality-update compliance by KB, with CU month, OS, client-state, and device
