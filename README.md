@@ -102,6 +102,13 @@ alert type, and alert timestamp. It shows one most-relevant latest alert per
 device and driver; the dedicated error table remains the complete view of all
 active alert subtypes.
 
+**v6 change:** the **Stato Client e Alert per Device** table adds multi-select
+filters for `AlertStatus`, `AlertClassification`, and `AlertSubtype`. Their
+values are populated dynamically from `UCUpdateAlert` for DriverUpdate records
+with a correlatable `UpdateId` in the selected time range; deleted alert
+tombstones are excluded and selecting **All** preserves rows without alerts.
+This table was named **Stato Service-Side e Alert per Driver** in v5.
+
 ### 4. WUfB - KB Compliance Report
 
 Quality-update compliance by KB, with CU month, OS, client-state, and device
