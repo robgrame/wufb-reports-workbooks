@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "# 📈 WUfB Reports - Riepilogo Compliance per KB\n\nReport focalizzato sulla compliance di installazione per ciascuna KB, con indicazione del mese di riferimento della Cumulative Update.\n\n> **Filtri predefiniti:** *Classification = Security* e *Tipo PC = Solo PC Modern*. Un device è considerato **PC Modern** solo se è **Windows 11** *e* il suo hostname inizia con `MP5`, `WP5`, `KP5`, `TP5`, `MS5`, `WS5`, `KS5` o `TS5`. Modifica i filtri per includere aggiornamenti NonSecurity o tutti i PC (Windows 10 e device fuori da questi prefissi hostname).\n>\n> **Dettaglio per Device:** la vista **Stato Installazione** non è limitata dall'Intervallo Temporale e mostra tutti i rilasci disponibili nella retention interattiva configurata per le tabelle di Log Analytics. L'Intervallo Temporale continua ad applicarsi ai riepiloghi e ai grafici.\n\n---"
+        "json": "# 📈 WUfB Reports - Riepilogo Compliance per KB\n\nReport focalizzato sulla compliance di installazione per ciascuna KB, con indicazione del mese di riferimento della Cumulative Update.\n\n> **Filtri predefiniti:** *Classification = Security* e *Tipo PC = Solo PC Modern*. Un device è considerato **PC Modern** solo se è **Windows 11** *e* il suo hostname inizia con `MP5`, `WP5`, `KP5`, `TP5`, `MS5`, `WS5`, `KS5` o `TS5`. Modifica i filtri per includere aggiornamenti NonSecurity o tutti i PC (Windows 10 e device fuori da questi prefissi hostname).\n>\n> **Dettaglio per Device:** la vista **Stato Installazione** non è limitata dall'Intervallo Temporale e mostra tutti i rilasci disponibili nella retention interattiva configurata per le tabelle di Log Analytics. L'Intervallo Temporale continua ad applicarsi ai riepiloghi e ai grafici.\n\n---\n\n> **Nota v13:** ogni vista dispone di filtri locali coerenti con le proprie colonne. Restano globali soltanto Intervallo Temporale e Tipo PC."
       },
       "name": "text-header"
     },
@@ -42,125 +42,6 @@
             "label": "Intervallo Temporale"
           },
           {
-            "id": "c1a1e001-2222-4a1a-b1c1-222222222222",
-            "version": "KqlParameterItem/1.0",
-            "name": "KBFilter",
-            "type": 2,
-            "isRequired": true,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "UCClientUpdateStatus\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct TargetKBNumber\n| where isnotempty(TargetKBNumber)\n| order by TargetKBNumber desc",
-            "timeContext": {
-              "durationMs": 0
-            },
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "selectAllValue": "*"
-            },
-            "defaultValue": "value::all",
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "label": "KB Number"
-          },
-          {
-            "id": "c1a1e001-3333-4a1a-b1c1-333333333333",
-            "version": "KqlParameterItem/1.0",
-            "name": "ClientStateFilter",
-            "type": 2,
-            "isRequired": true,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "UCClientUpdateStatus\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct ClientState\n| order by ClientState asc",
-            "timeContext": {
-              "durationMs": 0
-            },
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "selectAllValue": "*"
-            },
-            "defaultValue": "value::all",
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "label": "Client State"
-          },
-          {
-            "id": "c1a1e001-4444-4a1a-b1c1-444444444444",
-            "version": "KqlParameterItem/1.0",
-            "name": "UpdateClassificationFilter",
-            "type": 2,
-            "isRequired": true,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "let classifications = materialize(\n    UCClientUpdateStatus\n    | where UpdateCategory == 'WindowsQualityUpdate'\n    | distinct UpdateClassification\n    | where isnotempty(UpdateClassification)\n);\nlet hasSecurity = toscalar(classifications | where UpdateClassification == 'Security' | count) > 0;\nclassifications\n| project value = UpdateClassification, label = UpdateClassification, selected = iff(hasSecurity, UpdateClassification == 'Security', true)\n| order by value asc",
-            "timeContext": {
-              "durationMs": 0
-            },
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "selectAllValue": "*"
-            },
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "label": "Classification (Security/NonSecurity)"
-          },
-          {
-            "id": "c1a1e001-6666-4a1a-b1c1-666666666666",
-            "version": "KqlParameterItem/1.0",
-            "name": "CUMonthFilter",
-            "type": 2,
-            "isRequired": true,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "UCClientUpdateStatus\n| where UpdateCategory == 'WindowsQualityUpdate'\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, 'yyyy-MM')\n| distinct CUMonth\n| order by CUMonth desc",
-            "timeContext": {
-              "durationMs": 0
-            },
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "selectAllValue": "*"
-            },
-            "defaultValue": "value::all",
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "label": "CU Month"
-          },
-          {
-            "id": "c1a1e001-7777-4a1a-b1c1-777777777777",
-            "version": "KqlParameterItem/1.0",
-            "name": "OSVersionFilter",
-            "type": 2,
-            "isRequired": true,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "UCClient\n| summarize arg_max(TimeGenerated, OSVersion) by AzureADDeviceId\n| distinct OSVersion\n| where isnotempty(OSVersion)\n| order by OSVersion desc",
-            "timeContext": {
-              "durationMs": 0
-            },
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "selectAllValue": "*"
-            },
-            "defaultValue": "value::all",
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "label": "OS Version"
-          },
-          {
             "id": "c1a1e001-9999-4a1a-b1c1-999999999999",
             "version": "KqlParameterItem/1.0",
             "name": "ModernOnly",
@@ -173,35 +54,161 @@
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
             "label": "Tipo PC"
-          },
-          {
-            "id": "c1a1e001-5555-4a1a-b1c1-555555555555",
-            "version": "KqlParameterItem/1.0",
-            "name": "DeviceNameFilter",
-            "type": 1,
-            "isRequired": false,
-            "value": "",
-            "label": "Filtro Device Name (contiene)"
           }
         ],
         "style": "pills",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
-      "name": "parameters"
+      "name": "parameters-global"
     },
     {
       "type": 1,
       "content": {
-        "json": "## 📊 Compliance per KB - Riepilogo\n\n**Legenda ClientState** (stato lato device, fonte `UCClientUpdateStatus`):\n\n| Stato | Significato |\n|---|---|\n| 🟢 **Installed** | La KB è installata sul device. |\n| 🔵 **Installing** | Il device ha iniziato il workflow di installazione (download, install, restart pending). Vedi `ClientSubstate` per il dettaglio (es. `DownloadStart`, `InstallStart`, `RestartRequired`). |\n| 🟠 **Offering** | La KB è stata *offerta* al device (visibile in Windows Update) ma l'installazione non è ancora iniziata. Tipico quando il device non si è ancora collegato/non ha ancora avviato il download, o è in attesa di una *active hour* / deadline. |\n| 🟡 **OnHold** | Installazione bloccata da una *safeguard hold* di Microsoft (incompatibilità nota), da una *pause* configurata nel Ring, o da una deferral policy. Il device riceverà la KB quando l'hold sarà rimosso. |\n| ⚪ **Canceled** | L'offerta è stata annullata (es. policy cambiata, KB superata da una più recente, deployment annullato). |\n| ❔ **Unknown** | Il device non ha ancora riportato un ClientState per quella KB (tipicamente perché non l'ha ancora ricevuta o non ha completato lo scan). Se persiste indica un problema di reporting/diagnostica.\n\n> **Denominatore:** PercentInstalledReported considera soltanto i device che hanno prodotto uno stato per la KB selezionata; non rappresenta automaticamente l'intera flotta.\n>\n> Se selezioni una KB precedente all'Intervallo Temporale, il dettaglio può contenere dati mentre riepilogo e grafici restano vuoti."
+        "json": "## 📊 Compliance per KB - Riepilogo\n\n**Legenda ClientState** (stato lato device, fonte `UCClientUpdateStatus`):\n\n| Stato | Significato |\n|---|---|\n| 🟢 **Installed** | La KB è installata sul device. |\n| 🔵 **Installing** | Il device ha iniziato il workflow di installazione (download, install, restart pending). Vedi `ClientSubstate` per il dettaglio (es. `DownloadStart`, `InstallStart`, `RestartRequired`). |\n| 🟠 **Offering** | La KB è stata *offerta* al device (visibile in Windows Update) ma l'installazione non è ancora iniziata. Tipico quando il device non si è ancora collegato/non ha ancora avviato il download, o è in attesa di una *active hour* / deadline. |\n| 🟡 **OnHold** | Installazione bloccata da una *safeguard hold* di Microsoft (incompatibilità nota), da una *pause* configurata nel Ring, o da una deferral policy. Il device riceverà la KB quando l'hold sarà rimosso. |\n| ⚪ **Canceled** | L'offerta è stata annullata (es. policy cambiata, KB superata da una più recente, deployment annullato). |\n| ❔ **Unknown** | Il device non ha ancora riportato un ClientState per quella KB (tipicamente perché non l'ha ancora ricevuta o non ha completato lo scan). Se persiste indica un problema di reporting/diagnostica.\n\n> **Denominatore:** PercentInstalledReported considera soltanto i device che hanno prodotto uno stato per la KB selezionata; non rappresenta automaticamente l'intera flotta.\n>\n> Se selezioni una KB precedente all'Intervallo Temporale, il dettaglio può contenere dati mentre riepilogo e grafici restano vuoti.\n\n**Filtri locali:** KB, nome update, classificazione, CU Month, OS Version e Device Name. ClientState non è filtrabile in questa tabella per preservare tutti gli stati nel calcolo; OS Version e Device Name restringono invece la popolazione e quindi il denominatore."
       },
       "name": "text-section-summary"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "f13a0001-0001-4001-8001-000000000001",
+            "version": "KqlParameterItem/1.0",
+            "name": "SummaryKBFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| distinct TargetKBNumber\n| where isnotempty(TargetKBNumber)\n| order by TargetKBNumber desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "KB Number"
+          },
+          {
+            "id": "f13a0001-0002-4001-8001-000000000002",
+            "version": "KqlParameterItem/1.0",
+            "name": "SummaryUpdateNameFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Update Display Name (contains)"
+          },
+          {
+            "id": "f13a0001-0003-4001-8001-000000000003",
+            "version": "KqlParameterItem/1.0",
+            "name": "SummaryClassificationFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "let classifications = materialize(\n    UCClientUpdateStatus\n    | where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n    | distinct UpdateClassification\n    | where isnotempty(UpdateClassification)\n);\nlet hasSecurity = toscalar(classifications | where UpdateClassification == \"Security\" | count) > 0;\nclassifications\n| project value = UpdateClassification, label = UpdateClassification, selected = iff(hasSecurity, UpdateClassification == \"Security\", true)\n| order by value asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "label": "Classification (Security/NonSecurity)"
+          },
+          {
+            "id": "f13a0001-0004-4001-8001-000000000004",
+            "version": "KqlParameterItem/1.0",
+            "name": "SummaryCUMonthFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| distinct CUMonth\n| order by CUMonth desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "CU Month"
+          },
+          {
+            "id": "f13a0001-0005-4001-8001-000000000005",
+            "version": "KqlParameterItem/1.0",
+            "name": "SummaryOSVersionFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClient\n| where TimeGenerated {TimeRange}\n| distinct OSVersion\n| where isnotempty(OSVersion)\n| order by OSVersion desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "OS Version"
+          },
+          {
+            "id": "f13a0001-0006-4001-8001-000000000006",
+            "version": "KqlParameterItem/1.0",
+            "name": "SummaryDeviceNameFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Device Name (contains)"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters-kb-compliance-summary"
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _osVersion = dynamic([{OSVersionFilter}]);\nlet _modernOnly = \"{ModernOnly}\";\nlet _deviceFilter = \"{DeviceNameFilter}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, OSVersion;\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or (OSVersion startswith \"Windows 11\" and (DeviceName startswith \"MP5\" or DeviceName startswith \"WP5\" or DeviceName startswith \"KP5\" or DeviceName startswith \"TP5\" or DeviceName startswith \"MS5\" or DeviceName startswith \"WS5\" or DeviceName startswith \"KS5\" or DeviceName startswith \"TS5\"))\n| summarize\n    ReportingDevices = dcount(AzureADDeviceId),\n    Installed = dcountif(AzureADDeviceId, ClientState == \"Installed\"),\n    Installing = dcountif(AzureADDeviceId, ClientState == \"Installing\"),\n    Offering = dcountif(AzureADDeviceId, ClientState == \"Offering\"),\n    OnHold = dcountif(AzureADDeviceId, ClientState == \"OnHold\"),\n    Canceled = dcountif(AzureADDeviceId, ClientState == \"Canceled\"),\n    Unknown = dcountif(AzureADDeviceId, ClientState == \"Unknown\")\n    by TargetKBNumber, UpdateDisplayName, UpdateClassification, CUMonth\n| extend PercentInstalledReported = round(todouble(Installed) / todouble(ReportingDevices) * 100, 1)\n| project\n    CUMonth,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    ReportingDevices,\n    Installed,\n    Installing,\n    Offering,\n    OnHold,\n    Canceled,\n    Unknown,\n    PercentInstalledReported\n| order by CUMonth desc, TargetKBNumber desc",
+        "query": "let _kb = dynamic([{SummaryKBFilter:escape}]);\nlet _updateName = \"{SummaryUpdateNameFilter:escape}\";\nlet _classification = dynamic([{SummaryClassificationFilter:escape}]);\nlet _cuMonth = dynamic([{SummaryCUMonthFilter:escape}]);\nlet _osVersion = dynamic([{SummaryOSVersionFilter:escape}]);\nlet _deviceFilter = \"{SummaryDeviceNameFilter:escape}\";\nlet _modernOnly = \"{ModernOnly:escape}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, OSVersion) by AzureADDeviceId;\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| summarize arg_max(TimeGenerated, DeviceName, UpdateDisplayName, UpdateClassification, ClientState, ClientSubstate, UpdateReleaseTime) by AzureADDeviceId, TargetKBNumber\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where _updateName == \"\" or UpdateDisplayName contains _updateName\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or (OSVersion startswith \"Windows 11\" and (DeviceName startswith \"MP5\" or DeviceName startswith \"WP5\" or DeviceName startswith \"KP5\" or DeviceName startswith \"TP5\" or DeviceName startswith \"MS5\" or DeviceName startswith \"WS5\" or DeviceName startswith \"KS5\" or DeviceName startswith \"TS5\"))\n| summarize ReportingDevices=count(), Installed=countif(ClientState == \"Installed\"), Installing=countif(ClientState == \"Installing\"), Offering=countif(ClientState == \"Offering\"), OnHold=countif(ClientState == \"OnHold\"), Canceled=countif(ClientState == \"Canceled\"), Unknown=countif(ClientState == \"Unknown\"), Other=countif(ClientState !in (\"Installed\", \"Installing\", \"Offering\", \"OnHold\", \"Canceled\", \"Unknown\")) by TargetKBNumber, UpdateDisplayName, UpdateClassification, CUMonth\n| extend PercentInstalledReported = round(todouble(Installed) / todouble(ReportingDevices) * 100, 1)\n| project CUMonth, TargetKBNumber, UpdateDisplayName, UpdateClassification, ReportingDevices, Installed, Installing, Offering, OnHold, Canceled, Unknown, Other, PercentInstalledReported\n| order by CUMonth desc, TargetKBNumber desc",
         "size": 0,
         "title": "Compliance per KB tra device con stato riportato",
         "timeContext": {
@@ -231,6 +238,13 @@
             },
             {
               "columnMatch": "Unknown",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "gray"
+              }
+            },
+            {
+              "columnMatch": "Other",
               "formatter": 8,
               "formatOptions": {
                 "palette": "gray"
@@ -275,10 +289,179 @@
       "name": "grid-kb-compliance-summary"
     },
     {
+      "type": 1,
+      "content": {
+        "json": "## 📉 Distribuzione ClientState per Mese CU\n\nFiltri locali per KB, nome update, classificazione, CU Month, ClientState, OS Version e Device Name."
+      },
+      "name": "text-section-state-by-month"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "f13b0001-0001-4001-8001-000000000001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ChartKBFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| distinct TargetKBNumber\n| where isnotempty(TargetKBNumber)\n| order by TargetKBNumber desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "KB Number"
+          },
+          {
+            "id": "f13b0001-0002-4001-8001-000000000002",
+            "version": "KqlParameterItem/1.0",
+            "name": "ChartUpdateNameFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Update Display Name (contains)"
+          },
+          {
+            "id": "f13b0001-0003-4001-8001-000000000003",
+            "version": "KqlParameterItem/1.0",
+            "name": "ChartClassificationFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "let classifications = materialize(\n    UCClientUpdateStatus\n    | where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n    | distinct UpdateClassification\n    | where isnotempty(UpdateClassification)\n);\nlet hasSecurity = toscalar(classifications | where UpdateClassification == \"Security\" | count) > 0;\nclassifications\n| project value = UpdateClassification, label = UpdateClassification, selected = iff(hasSecurity, UpdateClassification == \"Security\", true)\n| order by value asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "label": "Classification (Security/NonSecurity)"
+          },
+          {
+            "id": "f13b0001-0004-4001-8001-000000000004",
+            "version": "KqlParameterItem/1.0",
+            "name": "ChartCUMonthFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| distinct CUMonth\n| order by CUMonth desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "CU Month"
+          },
+          {
+            "id": "f13b0001-0005-4001-8001-000000000005",
+            "version": "KqlParameterItem/1.0",
+            "name": "ChartClientStateFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| distinct ClientState\n| where isnotempty(ClientState)\n| order by ClientState asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Client State"
+          },
+          {
+            "id": "f13b0001-0006-4001-8001-000000000006",
+            "version": "KqlParameterItem/1.0",
+            "name": "ChartOSVersionFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClient\n| where TimeGenerated {TimeRange}\n| distinct OSVersion\n| where isnotempty(OSVersion)\n| order by OSVersion desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "OS Version"
+          },
+          {
+            "id": "f13b0001-0007-4001-8001-000000000007",
+            "version": "KqlParameterItem/1.0",
+            "name": "ChartDeviceNameFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Device Name (contains)"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters-state-by-month"
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _kb = dynamic([{KBFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _osVersion = dynamic([{OSVersionFilter}]);\nlet _modernOnly = \"{ModernOnly}\";\nlet _deviceFilter = \"{DeviceNameFilter}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, OSVersion;\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetKBNumber\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or (OSVersion startswith \"Windows 11\" and (DeviceName startswith \"MP5\" or DeviceName startswith \"WP5\" or DeviceName startswith \"KP5\" or DeviceName startswith \"TP5\" or DeviceName startswith \"MS5\" or DeviceName startswith \"WS5\" or DeviceName startswith \"KS5\" or DeviceName startswith \"TS5\"))\n| summarize Devices = dcount(AzureADDeviceId) by CUMonth, ClientState\n| order by CUMonth desc",
+        "query": "let _kb = dynamic([{ChartKBFilter:escape}]);\nlet _updateName = \"{ChartUpdateNameFilter:escape}\";\nlet _classification = dynamic([{ChartClassificationFilter:escape}]);\nlet _cuMonth = dynamic([{ChartCUMonthFilter:escape}]);\nlet _clientState = dynamic([{ChartClientStateFilter:escape}]);\nlet _osVersion = dynamic([{ChartOSVersionFilter:escape}]);\nlet _deviceFilter = \"{ChartDeviceNameFilter:escape}\";\nlet _modernOnly = \"{ModernOnly:escape}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, OSVersion) by AzureADDeviceId;\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| summarize arg_max(TimeGenerated, DeviceName, UpdateDisplayName, UpdateClassification, ClientState, UpdateReleaseTime) by AzureADDeviceId, TargetKBNumber\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where _updateName == \"\" or UpdateDisplayName contains _updateName\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or (OSVersion startswith \"Windows 11\" and (DeviceName startswith \"MP5\" or DeviceName startswith \"WP5\" or DeviceName startswith \"KP5\" or DeviceName startswith \"TP5\" or DeviceName startswith \"MS5\" or DeviceName startswith \"WS5\" or DeviceName startswith \"KS5\" or DeviceName startswith \"TS5\"))\n| summarize by CUMonth, ClientState, AzureADDeviceId\n| summarize Devices=count() by CUMonth, ClientState\n| order by CUMonth desc",
         "size": 0,
         "title": "Distribuzione ClientState per Mese CU",
         "timeContext": {
@@ -327,15 +510,285 @@
     {
       "type": 1,
       "content": {
-        "json": "## 📋 Dettaglio per Device - Stato Installazione\n\nQuesta vista usa l'intera retention interattiva configurata per le tabelle di Log Analytics e non il filtro **Intervallo Temporale**, così include anche le KB dei mesi precedenti."
+        "json": "## 📋 Dettaglio per Device - Stato Installazione\n\nQuesta vista usa l'intera retention interattiva configurata per le tabelle di Log Analytics e non il filtro **Intervallo Temporale**, così include anche le KB dei mesi precedenti.\n\n**Filtri locali:** KB, nome update, classificazione, CU Month, device, ClientState/ClientSubstate, OS Version/Build, stato security e stato pausa. Anche i menu usano l’intera retention.\n\nI menu elencano i valori osservati nella retention; un valore esclusivamente storico può non avere righe nello stato più recente Device + KB."
       },
       "name": "text-section-detail"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "f13c0001-0001-4001-8001-000000000001",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailKBFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| distinct TargetKBNumber\n| where isnotempty(TargetKBNumber)\n| order by TargetKBNumber desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "KB Number"
+          },
+          {
+            "id": "f13c0001-0002-4001-8001-000000000002",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailUpdateNameFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Update Display Name (contains)"
+          },
+          {
+            "id": "f13c0001-0003-4001-8001-000000000003",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailClassificationFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "let classifications = materialize(\n    UCClientUpdateStatus\n    | where UpdateCategory == \"WindowsQualityUpdate\"\n    | distinct UpdateClassification\n    | where isnotempty(UpdateClassification)\n);\nlet hasSecurity = toscalar(classifications | where UpdateClassification == \"Security\" | count) > 0;\nclassifications\n| project value = UpdateClassification, label = UpdateClassification, selected = iff(hasSecurity, UpdateClassification == \"Security\", true)\n| order by value asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "label": "Classification (Security/NonSecurity)"
+          },
+          {
+            "id": "f13c0001-0004-4001-8001-000000000004",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailCUMonthFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| distinct CUMonth\n| order by CUMonth desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "CU Month"
+          },
+          {
+            "id": "f13c0001-0005-4001-8001-000000000005",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailDeviceNameFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Device Name (contains)"
+          },
+          {
+            "id": "f13c0001-0006-4001-8001-000000000006",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailClientStateFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| distinct ClientState\n| where isnotempty(ClientState)\n| order by ClientState asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Client State"
+          },
+          {
+            "id": "f13c0001-0007-4001-8001-000000000007",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailClientSubstateFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| distinct ClientSubstate\n| where isnotempty(ClientSubstate)\n| order by ClientSubstate asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Client Substate"
+          },
+          {
+            "id": "f13c0001-0008-4001-8001-000000000008",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailOSVersionFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClient\n| distinct OSVersion\n| where isnotempty(OSVersion)\n| order by OSVersion desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "OS Version"
+          },
+          {
+            "id": "f13c0001-0009-4001-8001-000000000009",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailOSBuildFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClient\n| distinct OSBuild\n| where isnotempty(OSBuild)\n| order by OSBuild desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "OS Build"
+          },
+          {
+            "id": "f13c0001-0010-4001-8001-000000000010",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailOSSecurityStatusFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClient\n| distinct OSSecurityUpdateStatus\n| where isnotempty(OSSecurityUpdateStatus)\n| order by OSSecurityUpdateStatus asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "OS Security Update Status"
+          },
+          {
+            "id": "f13c0001-0011-4001-8001-000000000011",
+            "version": "KqlParameterItem/1.0",
+            "name": "DetailPauseStateFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClient\n| distinct WUQualityPauseState\n| where isnotempty(WUQualityPauseState)\n| order by WUQualityPauseState asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "WU Quality Pause State"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters-device-detail"
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _osVersion = dynamic([{OSVersionFilter}]);\nlet _modernOnly = \"{ModernOnly}\";\nlet _deviceFilter = \"{DeviceNameFilter}\";\nlet clientInfo = UCClient\n| summarize arg_max(TimeGenerated, OSVersion, OSBuild, OSSecurityUpdateStatus, WUQualityDeferralDays, WUQualityPauseState, LastWUScanTime) by AzureADDeviceId;\nUCClientUpdateStatus\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, DeviceName, UpdateDisplayName, UpdateClassification, ClientState, ClientSubstate, CUMonth, ClientSubstateTime, OfferReceivedTime, RestartRequiredTime, UpdateInstalledTime) by AzureADDeviceId, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or (OSVersion startswith \"Windows 11\" and (DeviceName startswith \"MP5\" or DeviceName startswith \"WP5\" or DeviceName startswith \"KP5\" or DeviceName startswith \"TP5\" or DeviceName startswith \"MS5\" or DeviceName startswith \"WS5\" or DeviceName startswith \"KS5\" or DeviceName startswith \"TS5\"))\n| project\n    CUMonth,\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    OSVersion,\n    OSBuild,\n    OSSecurityUpdateStatus,\n    WUQualityDeferralDays,\n    WUQualityPauseState,\n    LastWUScanTime,\n    ClientSubstateTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    TimeGenerated\n| order by CUMonth desc, DeviceName asc, TargetKBNumber asc",
+        "query": "let _kb = dynamic([{DetailKBFilter:escape}]);\nlet _updateName = \"{DetailUpdateNameFilter:escape}\";\nlet _classification = dynamic([{DetailClassificationFilter:escape}]);\nlet _cuMonth = dynamic([{DetailCUMonthFilter:escape}]);\nlet _deviceFilter = \"{DetailDeviceNameFilter:escape}\";\nlet _clientState = dynamic([{DetailClientStateFilter:escape}]);\nlet _clientSubstate = dynamic([{DetailClientSubstateFilter:escape}]);\nlet _osVersion = dynamic([{DetailOSVersionFilter:escape}]);\nlet _osBuild = dynamic([{DetailOSBuildFilter:escape}]);\nlet _securityStatus = dynamic([{DetailOSSecurityStatusFilter:escape}]);\nlet _pauseState = dynamic([{DetailPauseStateFilter:escape}]);\nlet _modernOnly = \"{ModernOnly:escape}\";\nlet clientInfo = UCClient\n| summarize arg_max(TimeGenerated, OSVersion, OSBuild, OSSecurityUpdateStatus, WUQualityDeferralDays, WUQualityPauseState, LastWUScanTime) by AzureADDeviceId;\nUCClientUpdateStatus\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| summarize arg_max(TimeGenerated, DeviceName, UpdateDisplayName, UpdateClassification, ClientState, ClientSubstate, UpdateReleaseTime, ClientSubstateTime, OfferReceivedTime, RestartRequiredTime, UpdateInstalledTime) by AzureADDeviceId, TargetKBNumber\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where _updateName == \"\" or UpdateDisplayName contains _updateName\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| where \"*\" in (_clientSubstate) or ClientSubstate in (_clientSubstate)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where \"*\" in (_osBuild) or OSBuild in (_osBuild)\n| where \"*\" in (_securityStatus) or OSSecurityUpdateStatus in (_securityStatus)\n| where \"*\" in (_pauseState) or WUQualityPauseState in (_pauseState)\n| where _modernOnly == \"all\" or (OSVersion startswith \"Windows 11\" and (DeviceName startswith \"MP5\" or DeviceName startswith \"WP5\" or DeviceName startswith \"KP5\" or DeviceName startswith \"TP5\" or DeviceName startswith \"MS5\" or DeviceName startswith \"WS5\" or DeviceName startswith \"KS5\" or DeviceName startswith \"TS5\"))\n| project CUMonth, DeviceName, TargetKBNumber, UpdateDisplayName, UpdateClassification, ClientState, ClientSubstate, OSVersion, OSBuild, OSSecurityUpdateStatus, WUQualityDeferralDays, WUQualityPauseState, LastWUScanTime, ClientSubstateTime, OfferReceivedTime, RestartRequiredTime, UpdateInstalledTime, TimeGenerated\n| order by CUMonth desc, DeviceName asc, TargetKBNumber asc",
         "size": 0,
         "title": "Stato Installazione per Device e KB - Tutta la retention",
         "timeContext": {
@@ -468,6 +921,12 @@
                   },
                   {
                     "operator": "==",
+                    "thresholdValue": "NotPaused",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
                     "thresholdValue": "Paused",
                     "representation": "3",
                     "text": "{0}{1}"
@@ -515,15 +974,294 @@
     {
       "type": 1,
       "content": {
-        "json": "## 🚦 Stato Client e Alert per Device\n\nLa tabella mostra lo stato *lato device* (`ClientState` da `UCClientUpdateStatus`) e gli eventuali **alert** correlati alla stessa KB.\n\n**Note di lettura:**\n- La join con gli Alert avviene su `AzureADDeviceId` + `TargetBuild` in *leftouter*: vengono mostrate **tutte le cumulative** selezionate (anche con filtro *CU Month = All*); l'alert compare solo per le righe con un record corrispondente.\n- Quando il device è in attesa di riavvio per completare l'installazione viene mostrato `AwaitingRestart` nella colonna *Note*.\n- `AlertStatus = Resolved` indica un problema *passato già rientrato* (es. errore transitorio di connettività); non richiede azione."
+        "json": "## 🚦 Stato Client e Alert per Device\n\nLa tabella mostra lo stato *lato device* (`ClientState` da `UCClientUpdateStatus`) e gli eventuali **alert** correlati alla stessa KB.\n\n**Note di lettura:**\n- La join con gli Alert avviene su `AzureADDeviceId` + `TargetBuild` in *leftouter*: vengono mostrate **tutte le cumulative** selezionate (anche con filtro *CU Month = All*); l'alert compare solo per le righe con un record corrispondente.\n- Quando il device è in attesa di riavvio per completare l'installazione viene mostrato `AwaitingRestart` nella colonna *Note*.\n- `AlertStatus = Resolved` indica un problema *passato già rientrato* (es. errore transitorio di connettività); non richiede azione.\n\n**Filtri locali:** KB, nome update, classificazione, CU Month, device, ClientState/ClientSubstate, OS Version, Alert Status/Classification/Subtype ed ErrorCode.\n- Con i filtri Alert impostati su *All* restano visibili anche le righe senza alert; selezionando valori specifici vengono mostrate solo le righe corrispondenti. In **Alert Status** è disponibile anche *(nessun alert)*."
       },
       "name": "text-section-service-alerts"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "f13d0001-0001-4001-8001-000000000001",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertKBFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| distinct TargetKBNumber\n| where isnotempty(TargetKBNumber)\n| order by TargetKBNumber desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "KB Number"
+          },
+          {
+            "id": "f13d0001-0002-4001-8001-000000000002",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertUpdateNameFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Update Display Name (contains)"
+          },
+          {
+            "id": "f13d0001-0003-4001-8001-000000000003",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertUpdateClassificationFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "let classifications = materialize(\n    UCClientUpdateStatus\n    | where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n    | distinct UpdateClassification\n    | where isnotempty(UpdateClassification)\n);\nlet hasSecurity = toscalar(classifications | where UpdateClassification == \"Security\" | count) > 0;\nclassifications\n| project value = UpdateClassification, label = UpdateClassification, selected = iff(hasSecurity, UpdateClassification == \"Security\", true)\n| order by value asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "label": "Classification (Security/NonSecurity)"
+          },
+          {
+            "id": "f13d0001-0004-4001-8001-000000000004",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertCUMonthFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| distinct CUMonth\n| order by CUMonth desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "CU Month"
+          },
+          {
+            "id": "f13d0001-0005-4001-8001-000000000005",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertDeviceNameFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Device Name (contains)"
+          },
+          {
+            "id": "f13d0001-0006-4001-8001-000000000006",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertClientStateFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| distinct ClientState\n| where isnotempty(ClientState)\n| order by ClientState asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Client State"
+          },
+          {
+            "id": "f13d0001-0007-4001-8001-000000000007",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertClientSubstateFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| distinct ClientSubstate\n| where isnotempty(ClientSubstate)\n| order by ClientSubstate asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Client Substate"
+          },
+          {
+            "id": "f13d0001-0008-4001-8001-000000000008",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertOSVersionFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCClient\n| where TimeGenerated {TimeRange}\n| distinct OSVersion\n| where isnotempty(OSVersion)\n| order by OSVersion desc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "OS Version"
+          },
+          {
+            "id": "f13d0001-0009-4001-8001-000000000009",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertStatusFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(TargetBuild)\n| summarize arg_max(TimeGenerated, AlertStatus, AlertClassification) by AzureADDeviceId, TargetBuild, AlertSubtype\n| where AlertStatus != \"Deleted\"\n| distinct AlertStatus\n| where isnotempty(AlertStatus)\n| union (datatable(AlertStatus:string)[\"(nessun alert)\"])\n| order by AlertStatus asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Alert Status"
+          },
+          {
+            "id": "f13d0001-0010-4001-8001-000000000010",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertClassificationFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(TargetBuild)\n| summarize arg_max(TimeGenerated, AlertStatus, AlertClassification) by AzureADDeviceId, TargetBuild, AlertSubtype\n| where AlertStatus != \"Deleted\"\n| distinct AlertClassification\n| where isnotempty(AlertClassification)\n| order by AlertClassification asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Alert Classification"
+          },
+          {
+            "id": "f13d0001-0011-4001-8001-000000000011",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertSubtypeFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "\"",
+            "delimiter": ",",
+            "query": "UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(TargetBuild)\n| summarize arg_max(TimeGenerated, AlertStatus, AlertClassification) by AzureADDeviceId, TargetBuild, AlertSubtype\n| where AlertStatus != \"Deleted\"\n| distinct AlertSubtype\n| where isnotempty(AlertSubtype)\n| order by AlertSubtype asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Alert Subtype"
+          },
+          {
+            "id": "f13d0001-0012-4001-8001-000000000012",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertErrorCodeFilter",
+            "type": 1,
+            "isRequired": false,
+            "value": "",
+            "label": "Error Code (contains)"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters-client-alerts"
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _osVersion = dynamic([{OSVersionFilter}]);\nlet _modernOnly = \"{ModernOnly}\";\nlet _deviceFilter = \"{DeviceNameFilter}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, OSVersion;\nlet updates = UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or (OSVersion startswith \"Windows 11\" and (DeviceName startswith \"MP5\" or DeviceName startswith \"WP5\" or DeviceName startswith \"KP5\" or DeviceName startswith \"TP5\" or DeviceName startswith \"MS5\" or DeviceName startswith \"WS5\" or DeviceName startswith \"KS5\" or DeviceName startswith \"TS5\"))\n| project DeviceName, AzureADDeviceId, TargetKBNumber, TargetBuild, CUMonth, ClientState, ClientSubstate;\nlet alertInfo = UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(TargetBuild)\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetBuild, AlertSubtype\n| project AzureADDeviceId, TargetBuild, AlertSubtype, AlertClassification, AlertStatus, ErrorCode;\nupdates\n| join kind=leftouter alertInfo on AzureADDeviceId, TargetBuild\n| extend Note = case(\n    ClientSubstate in (\"PendingRestart\", \"RestartRequired\", \"PendingReboot\"), \"AwaitingRestart\",\n    ClientState == \"Installed\" and (isempty(AlertSubtype) or AlertStatus != \"Active\"), \"OK - Installed\",\n    ClientState == \"Installing\" and (isempty(AlertSubtype) or AlertStatus != \"Active\"), strcat(\"In progress: \", ClientSubstate),\n    ClientState == \"Offering\" and (isempty(AlertSubtype) or AlertStatus != \"Active\"), \"Offered, not yet started\",\n    ClientState == \"OnHold\", \"On hold (safeguard/policy)\",\n    \"\"\n)\n| project\n    CUMonth,\n    DeviceName,\n    TargetKBNumber,\n    TargetBuild,\n    ClientState,\n    ClientSubstate,\n    AlertSubtype,\n    AlertClassification,\n    AlertStatus,\n    ErrorCode,\n    Note\n| order by CUMonth desc, DeviceName asc",
+        "query": "let _kb = dynamic([{AlertKBFilter:escape}]);\nlet _updateName = \"{AlertUpdateNameFilter:escape}\";\nlet _classification = dynamic([{AlertUpdateClassificationFilter:escape}]);\nlet _cuMonth = dynamic([{AlertCUMonthFilter:escape}]);\nlet _deviceFilter = \"{AlertDeviceNameFilter:escape}\";\nlet _clientState = dynamic([{AlertClientStateFilter:escape}]);\nlet _clientSubstate = dynamic([{AlertClientSubstateFilter:escape}]);\nlet _osVersion = dynamic([{AlertOSVersionFilter:escape}]);\nlet _alertStatus = dynamic([{AlertStatusFilter:escape}]);\nlet _alertClassification = dynamic([{AlertClassificationFilter:escape}]);\nlet _alertSubtype = dynamic([{AlertSubtypeFilter:escape}]);\nlet _errorCode = \"{AlertErrorCodeFilter:escape}\";\nlet _modernOnly = \"{ModernOnly:escape}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, OSVersion) by AzureADDeviceId;\nlet updates = UCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| summarize arg_max(TimeGenerated, DeviceName, UpdateDisplayName, UpdateClassification, ClientState, ClientSubstate, UpdateReleaseTime, TargetBuild) by AzureADDeviceId, TargetKBNumber\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where _updateName == \"\" or UpdateDisplayName contains _updateName\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| where \"*\" in (_clientSubstate) or ClientSubstate in (_clientSubstate)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or (OSVersion startswith \"Windows 11\" and (DeviceName startswith \"MP5\" or DeviceName startswith \"WP5\" or DeviceName startswith \"KP5\" or DeviceName startswith \"TP5\" or DeviceName startswith \"MS5\" or DeviceName startswith \"WS5\" or DeviceName startswith \"KS5\" or DeviceName startswith \"TS5\"))\n| project DeviceName, AzureADDeviceId, TargetKBNumber, TargetBuild, UpdateDisplayName, UpdateClassification, CUMonth, ClientState, ClientSubstate, OSVersion;\nlet alertInfo = UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| where isnotempty(TargetBuild)\n| summarize arg_max(TimeGenerated, AlertStatus, AlertClassification, ErrorCode) by AzureADDeviceId, TargetBuild, AlertSubtype\n| where AlertStatus != \"Deleted\"\n| project AzureADDeviceId, TargetBuild, AlertSubtype, AlertClassification, AlertStatus, ErrorCode;\nupdates\n| join kind=leftouter alertInfo on AzureADDeviceId, TargetBuild\n| extend AlertFilterStatus = iff(isempty(AlertSubtype), \"(nessun alert)\", AlertStatus)\n| where \"*\" in (_alertStatus) or AlertFilterStatus in (_alertStatus)\n| where \"*\" in (_alertClassification) or AlertClassification in (_alertClassification)\n| where \"*\" in (_alertSubtype) or AlertSubtype in (_alertSubtype)\n| where _errorCode == \"\" or ErrorCode contains _errorCode\n| extend Note = case(ClientSubstate in (\"PendingRestart\", \"RestartRequired\", \"PendingReboot\"), \"AwaitingRestart\", ClientState == \"Installed\" and (isempty(AlertSubtype) or AlertStatus != \"Active\"), \"OK - Installed\", ClientState == \"Installing\" and (isempty(AlertSubtype) or AlertStatus != \"Active\"), strcat(\"In progress: \", ClientSubstate), ClientState == \"Offering\" and (isempty(AlertSubtype) or AlertStatus != \"Active\"), \"Offered, not yet started\", ClientState == \"OnHold\", \"On hold (safeguard/policy)\", \"\")\n| project CUMonth, DeviceName, TargetKBNumber, TargetBuild, UpdateDisplayName, UpdateClassification, OSVersion, ClientState, ClientSubstate, AlertSubtype, AlertClassification, AlertStatus, ErrorCode, Note\n| order by CUMonth desc, DeviceName asc",
         "size": 0,
         "title": "Stato Client e Alert per Device/KB",
         "timeContext": {
@@ -602,7 +1340,7 @@
     {
       "type": 1,
       "content": {
-        "json": "---\n### Note\n- La colonna **CUMonth** è derivata da `UpdateReleaseTime` formattata come `yyyy-MM` per indicare il mese della Cumulative Update\n- La vista **Dettaglio per Device - Stato Installazione** interroga tutta la retention interattiva configurata e mostra l'ultimo stato noto per ciascuna combinazione Device + KB\n- Gli altri pannelli continuano a rispettare il filtro **Intervallo Temporale**\n- Usa i filtri in alto per selezionare KB specifiche, stati o classificazioni"
+        "json": "---\n### Note\n- La colonna **CUMonth** è derivata da `UpdateReleaseTime` formattata come `yyyy-MM`\n- La vista **Dettaglio per Device - Stato Installazione** interroga tutta la retention interattiva; anche i suoi filtri locali usano lo stesso ambito\n- Gli altri pannelli e i relativi filtri locali rispettano **Intervallo Temporale**\n- **Tipo PC** resta globale; tutti gli altri filtri sono collocati nella vista che controllano"
       },
       "name": "text-footer"
     }

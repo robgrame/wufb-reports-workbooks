@@ -148,6 +148,20 @@ Device + KB combination. The KB, CU Month, Client State, Classification, and OS
 Version parameter lists use the same scope, while summaries and charts continue
 to respect the selected time range.
 
+**v13 change:** every KB Compliance view now has a dedicated local filter
+block. The report-wide toolbar retains only **Intervallo Temporale** and
+**Tipo PC**. The summary, monthly chart, all-retention device detail, and
+client/alert table expose filters relevant to their own columns, including KB,
+update name, classification, CU month, device, client state/substate, OS
+version/build, update status/configuration fields, and alert fields where
+available. The
+summary intentionally omits ClientState filtering so
+`PercentInstalledReported` keeps all client states in the calculation; OS
+Version and Device Name still narrow the selected population and denominator.
+The Alert Status control also provides an explicit **(nessun alert)** option.
+Counts are exact after Device + KB deduplication, and an `Other` bucket exposes
+future or unexpected ClientState values instead of hiding them.
+
 ### 5. WUfB - Branch/Country Health Dashboard
 
 Security compliance gap per **Branch/Site** (derived from the `DeviceName`
