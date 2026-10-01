@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "# 📈 WUfB Reports - Riepilogo Compliance per KB\n\nReport focalizzato sulla compliance di installazione per ciascuna KB, con indicazione del mese di riferimento della Cumulative Update.\n\n> **Filtri predefiniti:** *Classification = Security* e *Tipo PC = Solo PC Modern*. Un device è considerato **PC Modern** solo se è **Windows 11** *e* il suo hostname inizia con `MP5`, `WP5`, `KP5`, `TP5`, `MS5`, `WS5`, `KS5` o `TS5`. Modifica i filtri per includere aggiornamenti NonSecurity o tutti i PC (Windows 10 e device fuori da questi prefissi hostname).\n\n---"
+        "json": "# 📈 WUfB Reports - Riepilogo Compliance per KB\n\nReport focalizzato sulla compliance di installazione per ciascuna KB, con indicazione del mese di riferimento della Cumulative Update.\n\n> **Filtri predefiniti:** *Classification = Security* e *Tipo PC = Solo PC Modern*. Un device è considerato **PC Modern** solo se è **Windows 11** *e* il suo hostname inizia con `MP5`, `WP5`, `KP5`, `TP5`, `MS5`, `WS5`, `KS5` o `TS5`. Modifica i filtri per includere aggiornamenti NonSecurity o tutti i PC (Windows 10 e device fuori da questi prefissi hostname).\n>\n> **Dettaglio per Device:** la vista **Stato Installazione** non è limitata dall'Intervallo Temporale e mostra tutti i rilasci disponibili nella retention interattiva configurata per le tabelle di Log Analytics. L'Intervallo Temporale continua ad applicarsi ai riepiloghi e ai grafici.\n\n---"
       },
       "name": "text-header"
     },
@@ -50,7 +50,10 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "UCClientUpdateStatus\n| where TimeGenerated > ago(90d)\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct TargetKBNumber\n| where isnotempty(TargetKBNumber)\n| order by TargetKBNumber desc",
+            "query": "UCClientUpdateStatus\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct TargetKBNumber\n| where isnotempty(TargetKBNumber)\n| order by TargetKBNumber desc",
+            "timeContext": {
+              "durationMs": 0
+            },
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::all"
@@ -71,7 +74,10 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "UCClientUpdateStatus\n| where TimeGenerated > ago(90d)\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct ClientState\n| order by ClientState asc",
+            "query": "UCClientUpdateStatus\n| where UpdateCategory == 'WindowsQualityUpdate'\n| distinct ClientState\n| order by ClientState asc",
+            "timeContext": {
+              "durationMs": 0
+            },
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::all"
@@ -92,7 +98,10 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "let classifications = materialize(\n    UCClientUpdateStatus\n    | where TimeGenerated > ago(90d)\n    | where UpdateCategory == 'WindowsQualityUpdate'\n    | distinct UpdateClassification\n    | where isnotempty(UpdateClassification)\n);\nlet hasSecurity = toscalar(classifications | where UpdateClassification == 'Security' | count) > 0;\nclassifications\n| project value = UpdateClassification, label = UpdateClassification, selected = iff(hasSecurity, UpdateClassification == 'Security', true)\n| order by value asc",
+            "query": "let classifications = materialize(\n    UCClientUpdateStatus\n    | where UpdateCategory == 'WindowsQualityUpdate'\n    | distinct UpdateClassification\n    | where isnotempty(UpdateClassification)\n);\nlet hasSecurity = toscalar(classifications | where UpdateClassification == 'Security' | count) > 0;\nclassifications\n| project value = UpdateClassification, label = UpdateClassification, selected = iff(hasSecurity, UpdateClassification == 'Security', true)\n| order by value asc",
+            "timeContext": {
+              "durationMs": 0
+            },
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::all"
@@ -112,7 +121,10 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "UCClientUpdateStatus\n| where TimeGenerated > ago(90d)\n| where UpdateCategory == 'WindowsQualityUpdate'\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, 'yyyy-MM')\n| distinct CUMonth\n| order by CUMonth desc",
+            "query": "UCClientUpdateStatus\n| where UpdateCategory == 'WindowsQualityUpdate'\n| where isnotempty(UpdateReleaseTime)\n| extend CUMonth = format_datetime(UpdateReleaseTime, 'yyyy-MM')\n| distinct CUMonth\n| order by CUMonth desc",
+            "timeContext": {
+              "durationMs": 0
+            },
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::all"
@@ -133,7 +145,10 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| distinct OSVersion\n| where isnotempty(OSVersion)\n| order by OSVersion desc",
+            "query": "UCClient\n| summarize arg_max(TimeGenerated, OSVersion) by AzureADDeviceId\n| distinct OSVersion\n| where isnotempty(OSVersion)\n| order by OSVersion desc",
+            "timeContext": {
+              "durationMs": 0
+            },
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::all"
@@ -178,7 +193,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## 📊 Compliance per KB - Riepilogo\n\n**Legenda ClientState** (stato lato device, fonte `UCClientUpdateStatus`):\n\n| Stato | Significato |\n|---|---|\n| 🟢 **Installed** | La KB è installata sul device. |\n| 🔵 **Installing** | Il device ha iniziato il workflow di installazione (download, install, restart pending). Vedi `ClientSubstate` per il dettaglio (es. `DownloadStart`, `InstallStart`, `RestartRequired`). |\n| 🟠 **Offering** | La KB è stata *offerta* al device (visibile in Windows Update) ma l'installazione non è ancora iniziata. Tipico quando il device non si è ancora collegato/non ha ancora avviato il download, o è in attesa di una *active hour* / deadline. |\n| 🟡 **OnHold** | Installazione bloccata da una *safeguard hold* di Microsoft (incompatibilità nota), da una *pause* configurata nel Ring, o da una deferral policy. Il device riceverà la KB quando l'hold sarà rimosso. |\n| ⚪ **Canceled** | L'offerta è stata annullata (es. policy cambiata, KB superata da una più recente, deployment annullato). |\n| ❔ **Unknown** | Il device non ha ancora riportato un ClientState per quella KB (tipicamente perché non l'ha ancora ricevuta o non ha completato lo scan). Se persiste indica un problema di reporting/diagnostica.\n\n> **Denominatore:** PercentInstalledReported considera soltanto i device che hanno prodotto uno stato per la KB selezionata; non rappresenta automaticamente l'intera flotta."
+        "json": "## 📊 Compliance per KB - Riepilogo\n\n**Legenda ClientState** (stato lato device, fonte `UCClientUpdateStatus`):\n\n| Stato | Significato |\n|---|---|\n| 🟢 **Installed** | La KB è installata sul device. |\n| 🔵 **Installing** | Il device ha iniziato il workflow di installazione (download, install, restart pending). Vedi `ClientSubstate` per il dettaglio (es. `DownloadStart`, `InstallStart`, `RestartRequired`). |\n| 🟠 **Offering** | La KB è stata *offerta* al device (visibile in Windows Update) ma l'installazione non è ancora iniziata. Tipico quando il device non si è ancora collegato/non ha ancora avviato il download, o è in attesa di una *active hour* / deadline. |\n| 🟡 **OnHold** | Installazione bloccata da una *safeguard hold* di Microsoft (incompatibilità nota), da una *pause* configurata nel Ring, o da una deferral policy. Il device riceverà la KB quando l'hold sarà rimosso. |\n| ⚪ **Canceled** | L'offerta è stata annullata (es. policy cambiata, KB superata da una più recente, deployment annullato). |\n| ❔ **Unknown** | Il device non ha ancora riportato un ClientState per quella KB (tipicamente perché non l'ha ancora ricevuta o non ha completato lo scan). Se persiste indica un problema di reporting/diagnostica.\n\n> **Denominatore:** PercentInstalledReported considera soltanto i device che hanno prodotto uno stato per la KB selezionata; non rappresenta automaticamente l'intera flotta.\n>\n> Se selezioni una KB precedente all'Intervallo Temporale, il dettaglio può contenere dati mentre riepilogo e grafici restano vuoti."
       },
       "name": "text-section-summary"
     },
@@ -312,7 +327,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## 📋 Dettaglio per Device - Stato Installazione"
+        "json": "## 📋 Dettaglio per Device - Stato Installazione\n\nQuesta vista usa l'intera retention interattiva configurata per le tabelle di Log Analytics e non il filtro **Intervallo Temporale**, così include anche le KB dei mesi precedenti."
       },
       "name": "text-section-detail"
     },
@@ -320,13 +335,12 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _osVersion = dynamic([{OSVersionFilter}]);\nlet _modernOnly = \"{ModernOnly}\";\nlet _deviceFilter = \"{DeviceNameFilter}\";\nlet clientInfo = UCClient\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId\n| project AzureADDeviceId, OSVersion, OSBuild, OSEdition, OSSecurityUpdateStatus, WUQualityDeferralDays, WUQualityPauseState, LastWUScanTime;\nUCClientUpdateStatus\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, *) by AzureADDeviceId, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or (OSVersion startswith \"Windows 11\" and (DeviceName startswith \"MP5\" or DeviceName startswith \"WP5\" or DeviceName startswith \"KP5\" or DeviceName startswith \"TP5\" or DeviceName startswith \"MS5\" or DeviceName startswith \"WS5\" or DeviceName startswith \"KS5\" or DeviceName startswith \"TS5\"))\n| project\n    CUMonth,\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    OSVersion,\n    OSBuild,\n    OSSecurityUpdateStatus,\n    WUQualityDeferralDays,\n    WUQualityPauseState,\n    LastWUScanTime,\n    ClientSubstateTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    TimeGenerated\n| order by CUMonth desc, DeviceName asc, TargetKBNumber asc",
+        "query": "let _kb = dynamic([{KBFilter}]);\nlet _clientState = dynamic([{ClientStateFilter}]);\nlet _classification = dynamic([{UpdateClassificationFilter}]);\nlet _cuMonth = dynamic([{CUMonthFilter}]);\nlet _osVersion = dynamic([{OSVersionFilter}]);\nlet _modernOnly = \"{ModernOnly}\";\nlet _deviceFilter = \"{DeviceNameFilter}\";\nlet clientInfo = UCClient\n| summarize arg_max(TimeGenerated, OSVersion, OSBuild, OSSecurityUpdateStatus, WUQualityDeferralDays, WUQualityPauseState, LastWUScanTime) by AzureADDeviceId;\nUCClientUpdateStatus\n| where UpdateCategory == \"WindowsQualityUpdate\"\n| extend DeviceName = iff(isempty(DeviceName), AzureADDeviceId, DeviceName)\n| extend CUMonth = format_datetime(UpdateReleaseTime, \"yyyy-MM\")\n| where \"*\" in (_kb) or TargetKBNumber in (_kb)\n| where \"*\" in (_classification) or UpdateClassification in (_classification)\n| where \"*\" in (_cuMonth) or CUMonth in (_cuMonth)\n| where _deviceFilter == \"\" or DeviceName contains _deviceFilter\n| summarize arg_max(TimeGenerated, DeviceName, UpdateDisplayName, UpdateClassification, ClientState, ClientSubstate, CUMonth, ClientSubstateTime, OfferReceivedTime, RestartRequiredTime, UpdateInstalledTime) by AzureADDeviceId, TargetKBNumber\n| where \"*\" in (_clientState) or ClientState in (_clientState)\n| join kind=leftouter clientInfo on AzureADDeviceId\n| where \"*\" in (_osVersion) or OSVersion in (_osVersion)\n| where _modernOnly == \"all\" or (OSVersion startswith \"Windows 11\" and (DeviceName startswith \"MP5\" or DeviceName startswith \"WP5\" or DeviceName startswith \"KP5\" or DeviceName startswith \"TP5\" or DeviceName startswith \"MS5\" or DeviceName startswith \"WS5\" or DeviceName startswith \"KS5\" or DeviceName startswith \"TS5\"))\n| project\n    CUMonth,\n    DeviceName,\n    TargetKBNumber,\n    UpdateDisplayName,\n    UpdateClassification,\n    ClientState,\n    ClientSubstate,\n    OSVersion,\n    OSBuild,\n    OSSecurityUpdateStatus,\n    WUQualityDeferralDays,\n    WUQualityPauseState,\n    LastWUScanTime,\n    ClientSubstateTime,\n    OfferReceivedTime,\n    RestartRequiredTime,\n    UpdateInstalledTime,\n    TimeGenerated\n| order by CUMonth desc, DeviceName asc, TargetKBNumber asc",
         "size": 0,
-        "title": "Stato Installazione per Device e KB",
+        "title": "Stato Installazione per Device e KB - Tutta la retention",
         "timeContext": {
           "durationMs": 0
         },
-        "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "table",
@@ -588,7 +602,7 @@
     {
       "type": 1,
       "content": {
-        "json": "---\n### Note\n- La colonna **CUMonth** è derivata da `UpdateReleaseTime` formattata come `yyyy-MM` per indicare il mese della Cumulative Update\n- I dati mostrano l'ultimo stato noto per ciascuna combinazione Device + KB\n- Usa i filtri in alto per selezionare KB specifiche, stati o classificazioni"
+        "json": "---\n### Note\n- La colonna **CUMonth** è derivata da `UpdateReleaseTime` formattata come `yyyy-MM` per indicare il mese della Cumulative Update\n- La vista **Dettaglio per Device - Stato Installazione** interroga tutta la retention interattiva configurata e mostra l'ultimo stato noto per ciascuna combinazione Device + KB\n- Gli altri pannelli continuano a rispettare il filtro **Intervallo Temporale**\n- Usa i filtri in alto per selezionare KB specifiche, stati o classificazioni"
       },
       "name": "text-footer"
     }

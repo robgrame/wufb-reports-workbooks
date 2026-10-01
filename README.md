@@ -107,6 +107,14 @@ Compliance percentages named `PercentInstalledReported` use only devices that
 reported a status for the selected update. They must not be interpreted as the
 percentage of the entire managed fleet.
 
+**v12 change (main `WUfB-KB-Compliance-Report.workbook`):** the **Dettaglio per
+Device - Stato Installazione** table is no longer constrained by the global
+**Intervallo Temporale**. It queries the interactive retention configured for
+the relevant Log Analytics tables and returns the latest known state for every
+Device + KB combination. The KB, CU Month, Client State, Classification, and OS
+Version parameter lists use the same scope, while summaries and charts continue
+to respect the selected time range.
+
 ### 5. WUfB - Branch/Country Health Dashboard
 
 Security compliance gap per **Branch/Site** (derived from the `DeviceName`
