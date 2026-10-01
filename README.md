@@ -109,6 +109,11 @@ with a correlatable `UpdateId` in the selected time range; deleted alert
 tombstones are excluded and selecting **All** preserves rows without alerts.
 This table was named **Stato Service-Side e Alert per Driver** in v5.
 
+**v7 change:** the three alert filters are no longer displayed in the global
+workbook parameter strip. They are declared in a dedicated parameter block
+immediately inside the **Stato Client e Alert per Device** section and continue
+to affect only that table.
+
 ### 4. WUfB - KB Compliance Report
 
 Quality-update compliance by KB, with CU month, OS, client-state, and device

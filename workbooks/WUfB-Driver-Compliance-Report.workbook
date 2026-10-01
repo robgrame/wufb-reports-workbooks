@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "# 🧩 WUfB - Driver Compliance Report\n\nQuesto workbook traccia lo stato di installazione e gli alert dei **driver e firmware** distribuiti via Windows Update for Business.\n\n**Sorgenti**: `UCClientUpdateStatus`, `UCServiceUpdateStatus`, `UCUpdateAlert`, `UCClient` (filtro `UpdateCategory == \"DriverUpdate\"`).\n\n> **Filtro Tipo PC:** di default vengono mostrati solo i **PC Modern**, intesi come macchine **Windows 11** il cui hostname inizia per `MP5`, `WP5`, `KP5`, `TP5`, `MS5`, `WS5`, `KS5` o `TS5`. Imposta *Tipo PC = Tutti i PC* per includere anche gli altri dispositivi.\n\n> **Nota v3:** rimossi i filtri e le colonne `UpdateManufacturer`, `DeviceManufacturer` e `DeviceModel`. `DeviceManufacturer`/`DeviceModel` non sono garantiti disponibili in `UCClient` su tutti i workspace (il dato anagrafica device va recuperato da `IntuneDevices`), e non è stata trovata traccia di `UpdateManufacturer` popolato in modo affidabile.\n\n> **Nota v4:** allineata la definizione di **PC Modern** a quella della KB Compliance Report: richiede Windows 11 *e* hostname con prefisso MP5/WP5/KP5/TP5/MS5/WS5/KS5/TS5 (in precedenza bastava non essere Windows 10).\n\n> **Nota v5:** aggiunto il filtro per nome driver. La vista **Stato Installazione per Device + Driver** applica i filtri ClientState, Nome Driver e Nome PC e mostra anche l'ultimo alert correlato, incluso lo stato dell'eventuale errore.\n\n> **Nota v6:** la vista **Stato Client e Alert per Device** include i filtri Alert Status, Alert Classification e Alert Subtype."
+        "json": "# 🧩 WUfB - Driver Compliance Report\n\nQuesto workbook traccia lo stato di installazione e gli alert dei **driver e firmware** distribuiti via Windows Update for Business.\n\n**Sorgenti**: `UCClientUpdateStatus`, `UCServiceUpdateStatus`, `UCUpdateAlert`, `UCClient` (filtro `UpdateCategory == \"DriverUpdate\"`).\n\n> **Filtro Tipo PC:** di default vengono mostrati solo i **PC Modern**, intesi come macchine **Windows 11** il cui hostname inizia per `MP5`, `WP5`, `KP5`, `TP5`, `MS5`, `WS5`, `KS5` o `TS5`. Imposta *Tipo PC = Tutti i PC* per includere anche gli altri dispositivi.\n\n> **Nota v3:** rimossi i filtri e le colonne `UpdateManufacturer`, `DeviceManufacturer` e `DeviceModel`. `DeviceManufacturer`/`DeviceModel` non sono garantiti disponibili in `UCClient` su tutti i workspace (il dato anagrafica device va recuperato da `IntuneDevices`), e non è stata trovata traccia di `UpdateManufacturer` popolato in modo affidabile.\n\n> **Nota v4:** allineata la definizione di **PC Modern** a quella della KB Compliance Report: richiede Windows 11 *e* hostname con prefisso MP5/WP5/KP5/TP5/MS5/WS5/KS5/TS5 (in precedenza bastava non essere Windows 10).\n\n> **Nota v5:** aggiunto il filtro per nome driver. La vista **Stato Installazione per Device + Driver** applica i filtri ClientState, Nome Driver e Nome PC e mostra anche l'ultimo alert correlato, incluso lo stato dell'eventuale errore.\n\n> **Nota v6:** la vista **Stato Client e Alert per Device** include i filtri Alert Status, Alert Classification e Alert Subtype.\n\n> **Nota v7:** i tre filtri Alert sono stati spostati dalla barra generale in un blocco locale interno alla vista **Stato Client e Alert per Device**."
       },
       "name": "text-header"
     },
@@ -116,87 +116,6 @@
             "type": 1,
             "value": "",
             "label": "Filtro Nome Driver (contains)"
-          },
-          {
-            "id": "d2a2e001-9991-4a1a-b1c1-999999999991",
-            "version": "KqlParameterItem/1.0",
-            "name": "AlertStatusFilter",
-            "type": 2,
-            "isRequired": true,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == 'DriverUpdate'\n| where isnotempty(UpdateId)\n| summarize arg_max(TimeGenerated, AlertStatus) by AzureADDeviceId, UpdateId, AlertSubtype\n| where AlertStatus != 'Deleted'\n| distinct AlertStatus\n| where isnotempty(AlertStatus)\n| order by AlertStatus asc",
-            "timeContext": {
-              "durationMs": 0
-            },
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "selectAllValue": "*",
-              "showDefault": false
-            },
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": [
-              "value::all"
-            ],
-            "label": "Filtro Alert Status (vista Client/Alert)"
-          },
-          {
-            "id": "d2a2e001-9992-4a1a-b1c1-999999999992",
-            "version": "KqlParameterItem/1.0",
-            "name": "AlertClassificationFilter",
-            "type": 2,
-            "isRequired": true,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == 'DriverUpdate'\n| where isnotempty(UpdateId)\n| summarize arg_max(TimeGenerated, AlertStatus, AlertClassification) by AzureADDeviceId, UpdateId, AlertSubtype\n| where AlertStatus != 'Deleted'\n| distinct AlertClassification\n| where isnotempty(AlertClassification)\n| order by AlertClassification asc",
-            "timeContext": {
-              "durationMs": 0
-            },
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "selectAllValue": "*",
-              "showDefault": false
-            },
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": [
-              "value::all"
-            ],
-            "label": "Filtro Alert Classification (vista Client/Alert)"
-          },
-          {
-            "id": "d2a2e001-9993-4a1a-b1c1-999999999993",
-            "version": "KqlParameterItem/1.0",
-            "name": "AlertSubtypeFilter",
-            "type": 2,
-            "isRequired": true,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == 'DriverUpdate'\n| where isnotempty(UpdateId)\n| summarize arg_max(TimeGenerated, AlertStatus) by AzureADDeviceId, UpdateId, AlertSubtype\n| where AlertStatus != 'Deleted'\n| distinct AlertSubtype\n| where isnotempty(AlertSubtype)\n| order by AlertSubtype asc",
-            "timeContext": {
-              "durationMs": 0
-            },
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "selectAllValue": "*",
-              "showDefault": false
-            },
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": [
-              "value::all"
-            ],
-            "label": "Filtro Alert Subtype (vista Client/Alert)"
           }
         ],
         "style": "pills",
@@ -521,6 +440,99 @@
         "json": "## 🚦 Stato Client e Alert per Device\n\nQuesta vista, precedentemente denominata **Stato Service-Side e Alert per Driver**, mostra insieme stato client, stato service e alert correlati tramite `AzureADDeviceId + UpdateId`. I filtri **Alert Status**, **Alert Classification** e **Alert Subtype** si applicano solo a questa vista; con *All* restano visibili anche i device senza alert. I valori dei menu rappresentano gli alert DriverUpdate correlabili disponibili nel workspace e nell'intervallo selezionato."
       },
       "name": "text-section-service-alerts"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "d2a2e001-9991-4a1a-b1c1-999999999991",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertStatusFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == 'DriverUpdate'\n| where isnotempty(UpdateId)\n| summarize arg_max(TimeGenerated, AlertStatus) by AzureADDeviceId, UpdateId, AlertSubtype\n| where AlertStatus != 'Deleted'\n| distinct AlertStatus\n| where isnotempty(AlertStatus)\n| order by AlertStatus asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Alert Status"
+          },
+          {
+            "id": "d2a2e001-9992-4a1a-b1c1-999999999992",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertClassificationFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == 'DriverUpdate'\n| where isnotempty(UpdateId)\n| summarize arg_max(TimeGenerated, AlertStatus, AlertClassification) by AzureADDeviceId, UpdateId, AlertSubtype\n| where AlertStatus != 'Deleted'\n| distinct AlertClassification\n| where isnotempty(AlertClassification)\n| order by AlertClassification asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Alert Classification"
+          },
+          {
+            "id": "d2a2e001-9993-4a1a-b1c1-999999999993",
+            "version": "KqlParameterItem/1.0",
+            "name": "AlertSubtypeFilter",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "UCUpdateAlert\n| where TimeGenerated {TimeRange}\n| where UpdateCategory == 'DriverUpdate'\n| where isnotempty(UpdateId)\n| summarize arg_max(TimeGenerated, AlertStatus) by AzureADDeviceId, UpdateId, AlertSubtype\n| where AlertStatus != 'Deleted'\n| distinct AlertSubtype\n| where isnotempty(AlertSubtype)\n| order by AlertSubtype asc",
+            "timeContext": {
+              "durationMs": 0
+            },
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*",
+              "showDefault": false
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ],
+            "label": "Alert Subtype"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters-service-alerts"
     },
     {
       "type": 3,
